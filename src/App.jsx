@@ -14,7 +14,28 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('analysis')
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [productos, setProductos] = useState([]);
 
+  useEffect(() => {
+    const fetchProductos = async () => {
+      try {
+        const { data: productosData, error } = await supabase
+          .from('tbProductos')
+          .select('*');
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        setProductos(productosData);
+        console.log('Productos cargados:', productosData);
+      } catch (err) {
+        console.error('Error fetching productos:', err);
+      }
+    };
+
+    fetchProductos();
+  }, []);
   // Cargar datos desde Supabase
   const loadDataFromSupabase = async () => {
     setLoading(true);

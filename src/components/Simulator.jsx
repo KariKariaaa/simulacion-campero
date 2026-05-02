@@ -7,8 +7,8 @@ import {
 
 export default function Simulator({ analysisParams, originalData }) {
   // Configuración de simulación
-  const [selectedHours, setSelectedHours] = useState(['13-14']) // Array de horas seleccionadas
-  const [simulationType, setSimulationType] = useState('hora') // 'hora', 'semana', 'mes'
+  const [selectedHours, setSelectedHours] = useState(['13-14'])
+  const [simulationType, setSimulationType] = useState('hora')
   const [duration, setDuration] = useState(1)
   const [isSimulating, setIsSimulating] = useState(false)
   
@@ -19,6 +19,60 @@ export default function Simulator({ analysisParams, originalData }) {
   const [metrics1, setMetrics1] = useState(null)
   const [metrics2, setMetrics2] = useState(null)
   const [metrics3, setMetrics3] = useState(null)
+
+  // Probabilidades de clientes por hora
+  const customerProbabilities = {
+    '13-14': [
+      { customers: 1, probability: 0.2544 },
+      { customers: 2, probability: 0.1494 },
+      { customers: 3, probability: 0.0552 },
+      { customers: 4, probability: 0.0215 },
+      { customers: 5, probability: 0.0000 }
+    ],
+    '14-15': [
+      { customers: 1, probability: 0.1467 },
+      { customers: 2, probability: 0.0920 },
+      { customers: 3, probability: 0.0444 },
+      { customers: 4, probability: 0.0175 },
+      { customers: 5, probability: 0.0023 }
+    ],
+    '15-16': [
+      { customers: 1, probability: 0.1211 },
+      { customers: 2, probability: 0.0633 },
+      { customers: 3, probability: 0.0552 },
+      { customers: 4, probability: 0.0054 },
+      { customers: 5, probability: 0.0023 }
+    ]
+  };
+
+  // Productos disponibles
+  const products = [
+    { idProductos: 1, nombre: 'Menú Camperito 6 pc', precio_venta: 58, precio_costo: 19.14, porcentaje: 2.28 },
+    { idProductos: 2, nombre: 'Menú Camperito 9 pc', precio_venta: 73, precio_costo: 24.09, porcentaje: 2.87 },
+    { idProductos: 3, nombre: 'Banquete Camperito 18 pc', precio_venta: 139, precio_costo: 45.87, porcentaje: 5.47 },
+    { idProductos: 4, nombre: 'Banquete Camperito 24 pc', precio_venta: 165, precio_costo: 54.45, porcentaje: 6.49 },
+    { idProductos: 5, nombre: 'Banquete Camperito 34 pc', precio_venta: 209, precio_costo: 68.97, porcentaje: 8.23 },
+    { idProductos: 6, nombre: 'Menú Alitas 6 pc', precio_venta: 64, precio_costo: 21.12, porcentaje: 2.52 },
+    { idProductos: 7, nombre: 'Menú Alitas 9 pc', precio_venta: 82, precio_costo: 27.06, porcentaje: 3.23 },
+    { idProductos: 8, nombre: 'Banquete Alitas 18 pc', precio_venta: 151, precio_costo: 49.83, porcentaje: 5.94 },
+    { idProductos: 9, nombre: 'Banquete Alitas 24 pc', precio_venta: 181, precio_costo: 59.73, porcentaje: 7.12 },
+    { idProductos: 10, nombre: 'Banquete Alitas 34 pc', precio_venta: 233, precio_costo: 76.89, porcentaje: 9.17 },
+    { idProductos: 11, nombre: 'Menú Campero (2 pc)', precio_venta: 53, precio_costo: 17.49, porcentaje: 2.09 },
+    { idProductos: 12, nombre: 'Menú Super Campero (3 pc)', precio_venta: 68, precio_costo: 22.44, porcentaje: 2.68 },
+    { idProductos: 13, nombre: 'Combo Familiar 6 pc', precio_venta: 140, precio_costo: 46.2, porcentaje: 5.51 },
+    { idProductos: 14, nombre: 'Combo Familiar 8 pc', precio_venta: 175, precio_costo: 57.75, porcentaje: 6.89 },
+    { idProductos: 15, nombre: 'Combo Familiar 10 pc', precio_venta: 205, precio_costo: 67.65, porcentaje: 8.07 },
+    { idProductos: 16, nombre: 'Combo Familiar 12 pc', precio_venta: 235, precio_costo: 77.55, porcentaje: 9.25 },
+    { idProductos: 17, nombre: 'Menú Hamburguesa Pollo (Clásica)', precio_venta: 36, precio_costo: 11.88, porcentaje: 1.42 },
+    { idProductos: 18, nombre: 'Menú Sandwich (Extra Crujiente)', precio_venta: 65, precio_costo: 21.45, porcentaje: 2.56 },
+    { idProductos: 19, nombre: 'Pizza 1 ingrediente (Grande)', precio_venta: 85, precio_costo: 28.05, porcentaje: 3.35 },
+    { idProductos: 20, nombre: 'Pizza Especialidad (Grande)', precio_venta: 100, precio_costo: 33, porcentaje: 3.94 },
+    { idProductos: 21, nombre: 'Pizza Camperitos', precio_venta: 65, precio_costo: 21.45, porcentaje: 2.56 },
+    { idProductos: 22, nombre: 'Pizza Combinadas (Promoción 2)', precio_venta: 125, precio_costo: 41.25, porcentaje: 4.92 },
+    { idProductos: 23, nombre: 'Tortillas (Unidad)', precio_venta: 2, precio_costo: 0.5, porcentaje: 0.07 },
+    { idProductos: 24, nombre: 'Flan', precio_venta: 13, precio_costo: 4.29, porcentaje: 0.51 },
+    { idProductos: 25, nombre: 'Cono Helado (Batido)', precio_venta: 18, precio_costo: 5.94, porcentaje: 0.71 }
+  ];
 
   // Tasas específicas por hora
   const hourlyRates = {
@@ -73,13 +127,18 @@ export default function Simulator({ analysisParams, originalData }) {
               const startTimeMinutes = hourConfig.startHour * 60
               const durationMinutes = 60
 
+              // Obtener probabilidades de clientes para esta hora
+              const hourProbabilities = customerProbabilities[hourValue]
+
               // Simular este período usando las tasas específicas de esa hora
               const periodClients = simulateQueuePeriod(
                 hourConfig.lambda,
                 hourConfig.mu,
                 startTimeMinutes,
                 durationMinutes,
-                hourConfig.abandonment
+                hourConfig.abandonment,
+                hourProbabilities,
+                products
               )
 
               // Agregar información de día y hora
@@ -90,7 +149,7 @@ export default function Simulator({ analysisParams, originalData }) {
                   dayNumber: dayIdx + 1,
                   hourPeriod: hourConfig.label,
                   globalOrder: globalOrder++,
-                  order: client.order // orden dentro de la hora
+                  order: client.order
                 })
               })
             })
@@ -180,10 +239,10 @@ export default function Simulator({ analysisParams, originalData }) {
         </div>
 
         <div className="space-y-6">
-          {/* Selector de Horas (Multi-selección) */}
+          {/* Selector de Horas */}
           <div>
             <label className="block font-semibold mb-3" style={{ color: '#6c341e' }}>
-              Seleccionar Horas a Simular (Puedes elegir 1, 2 o 3 horas)
+              Seleccionar Horas a Simular
             </label>
             <div className="grid grid-cols-3 gap-3">
               {availableHours.map(hour => (
@@ -204,11 +263,11 @@ export default function Simulator({ analysisParams, originalData }) {
               ))}
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Seleccionadas: {selectedHours.length > 0 ? selectedHours.length + ' hora(s)' : 'Ninguna'}
+              Seleccionadas: {selectedHours.length} hora(s)
             </p>
           </div>
 
-          {/* Selector de Tipo de Simulación */}
+          {/* Selector de Tipo */}
           <div>
             <label className="block font-semibold mb-3" style={{ color: '#6c341e' }}>
               Tipo de Simulación
@@ -307,7 +366,7 @@ export default function Simulator({ analysisParams, originalData }) {
                     : `${duration} mes${duration > 1 ? 'es' : ''} (${duration * 30} días)`
               }
               {selectedHours.length > 0 && (
-                <> durante {selectedHours.length} hora{selectedHours.length > 1 ? 's' : ''} diaria{selectedHours.length > 1 ? 's' : ''} ({
+                <> durante {selectedHours.length} hora{selectedHours.length > 1 ? 's' : ''} ({
                   selectedHours.map(h => hourlyRates[h].label).join(', ')
                 })</>
               )}
@@ -340,179 +399,92 @@ export default function Simulator({ analysisParams, originalData }) {
             </h2>
 
             <div className="grid grid-cols-3 gap-6">
-              {/* Simulación 1 */}
-              <div className="border-2 rounded-2xl p-6" style={{ borderColor: '#cb691c' }}>
-                <h3 className="text-xl font-bold mb-4" style={{ color: '#cb691c' }}>
-                  Simulación #1
-                </h3>
+              {[
+                { metrics: metrics1, title: 'Simulación #1', color: '#cb691c' },
+                { metrics: metrics2, title: 'Simulación #2', color: '#6c341e' },
+                { metrics: metrics3, title: 'Simulación #3', color: '#fbd816' }
+              ].map((sim, idx) => (
+                <div key={idx} className="border-2 rounded-2xl p-6" style={{ borderColor: sim.color }}>
+                  <h3 className="text-xl font-bold mb-4" style={{ color: sim.color }}>
+                    {sim.title}
+                  </h3>
 
-                {/* Estado */}
-                <div
-                  className="p-4 rounded-xl mb-4"
-                  style={{
-                    backgroundColor: metrics1.isStable ? '#f1f8f6' : '#fdeaea',
-                    //borderLeft: `4px solid ${getStatusColor(metrics1.isStable)}`,
-                  }}
-                >
-                  <p className="font-bold text-sm" style={{ color: getStatusColor(metrics1.isStable) }}>
-                    {getStatusMessage(metrics1.isStable, parseFloat(metrics1.rho))}
-                  </p>
-                  <p className="text-xs mt-2" style={{ color: '#333' }}>
-                    ρ = {metrics1.rho} ({metrics1.utilization}%)
-                  </p>
-                </div>
+                  <div
+                    className="p-4 rounded-xl mb-4"
+                    style={{
+                      backgroundColor: sim.metrics.isStable ? '#f1f8f6' : '#fdeaea',
+                    }}
+                  >
+                    <p className="font-bold text-sm" style={{ color: getStatusColor(sim.metrics.isStable) }}>
+                      {getStatusMessage(sim.metrics.isStable, parseFloat(sim.metrics.rho))}
+                    </p>
+                    <p className="text-xs mt-2" style={{ color: '#333' }}>
+                      ρ = {sim.metrics.rho} ({sim.metrics.utilization}%)
+                    </p>
+                  </div>
 
-                {/* Métricas clave */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#fef8e8' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Total</span>
-                    <span className="text-lg font-bold" style={{ color: '#cb691c' }}>{metrics1.totalClients}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Completados</span>
-                    <span className="text-sm font-bold" style={{ color: '#4caf50' }}>{metrics1.completedClients}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Abandonos</span>
-                    <span className="text-sm font-bold" style={{ color: '#f44336' }}>
-                      {metrics1.abandonedClients} ({metrics1.abandonmentRate.toFixed(1)}%)
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>T. Cola</span>
-                    <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{metrics1.avgQueueTime} min</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>T. Total</span>
-                    <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{metrics1.avgTotalTime} min</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Simulación 2 */}
-              <div className="border-2 rounded-2xl p-6" style={{ borderColor: '#6c341e' }}>
-                <h3 className="text-xl font-bold mb-4" style={{ color: '#6c341e' }}>
-                  Simulación #2
-                </h3>
-
-                <div
-                  className="p-4 rounded-xl mb-4"
-                  style={{
-                    backgroundColor: metrics2.isStable ? '#f1f8f6' : '#fdeaea',
-                    //borderLeft: `4px solid ${getStatusColor(metrics2.isStable)}`,
-                  }}
-                >
-                  <p className="font-bold text-sm" style={{ color: getStatusColor(metrics2.isStable) }}>
-                    {getStatusMessage(metrics2.isStable, parseFloat(metrics2.rho))}
-                  </p>
-                  <p className="text-xs mt-2" style={{ color: '#333' }}>
-                    ρ = {metrics2.rho} ({metrics2.utilization}%)
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#fef8e8' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Total</span>
-                    <span className="text-lg font-bold" style={{ color: '#cb691c' }}>{metrics2.totalClients}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Completados</span>
-                    <span className="text-sm font-bold" style={{ color: '#4caf50' }}>{metrics2.completedClients}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Abandonos</span>
-                    <span className="text-sm font-bold" style={{ color: '#f44336' }}>
-                      {metrics2.abandonedClients} ({metrics2.abandonmentRate.toFixed(1)}%)
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>T. Cola</span>
-                    <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{metrics2.avgQueueTime} min</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>T. Total</span>
-                    <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{metrics2.avgTotalTime} min</span>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#fef8e8' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Órdenes</span>
+                      <span className="text-lg font-bold" style={{ color: '#cb691c' }}>{sim.metrics.totalClients}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Personas</span>
+                      <span className="text-sm font-bold" style={{ color: '#4caf50' }}>{sim.metrics.totalPeople}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Abandonos</span>
+                      <span className="text-sm font-bold" style={{ color: '#f44336' }}>
+                        {sim.metrics.abandonedClients} ({sim.metrics.abandonmentRate.toFixed(1)}%)
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>T. Cola</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{sim.metrics.avgQueueTime} min</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Ingresos</span>
+                      <span className="text-sm font-bold" style={{ color: '#4caf50' }}>Q{(sim.metrics.totalRevenue).toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Simulación 3 */}
-              <div className="border-2 rounded-2xl p-6" style={{ borderColor: '#fbd816' }}>
-                <h3 className="text-xl font-bold mb-4" style={{ color: '#6c341e' }}>
-                  Simulación #3
-                </h3>
-
-                <div
-                  className="p-4 rounded-xl mb-4"
-                  style={{
-                    backgroundColor: metrics3.isStable ? '#f1f8f6' : '#fdeaea',
-                    //borderLeft: `4px solid ${getStatusColor(metrics3.isStable)}`,
-                  }}
-                >
-                  <p className="font-bold text-sm" style={{ color: getStatusColor(metrics3.isStable) }}>
-                    {getStatusMessage(metrics3.isStable, parseFloat(metrics3.rho))}
-                  </p>
-                  <p className="text-xs mt-2" style={{ color: '#333' }}>
-                    ρ = {metrics3.rho} ({metrics3.utilization}%)
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#fef8e8' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Total</span>
-                    <span className="text-lg font-bold" style={{ color: '#cb691c' }}>{metrics3.totalClients}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Completados</span>
-                    <span className="text-sm font-bold" style={{ color: '#4caf50' }}>{metrics3.completedClients}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Abandonos</span>
-                    <span className="text-sm font-bold" style={{ color: '#f44336' }}>
-                      {metrics3.abandonedClients} ({metrics3.abandonmentRate.toFixed(1)}%)
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>T. Cola</span>
-                    <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{metrics3.avgQueueTime} min</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>T. Total</span>
-                    <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{metrics3.avgTotalTime} min</span>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
 
-            {/* Promedios de las 3 simulaciones */}
+            {/* Promedios */}
             <div className="mt-6 p-6 rounded-2xl" style={{ backgroundColor: '#fef8e8', borderLeft: '4px solid #fbd816' }}>
               <h3 className="font-bold text-lg mb-4" style={{ color: '#6c341e' }}>
                 Promedios de las 3 Simulaciones
               </h3>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-5 gap-4">
                 <div>
-                  <p className="text-sm" style={{ color: '#666' }}>Total Clientes Promedio:</p>
+                  <p className="text-sm" style={{ color: '#666' }}>Órdenes:</p>
                   <p className="text-xl font-bold" style={{ color: '#cb691c' }}>
                     {Math.round((metrics1.totalClients + metrics2.totalClients + metrics3.totalClients) / 3)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm" style={{ color: '#666' }}>Tiempo Cola Promedio:</p>
+                  <p className="text-sm" style={{ color: '#666' }}>Personas:</p>
+                  <p className="text-xl font-bold" style={{ color: '#4caf50' }}>
+                    {Math.round((metrics1.totalPeople + metrics2.totalPeople + metrics3.totalPeople) / 3)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm" style={{ color: '#666' }}>T. Cola:</p>
                   <p className="text-xl font-bold" style={{ color: '#cb691c' }}>
                     {((metrics1.avgQueueTime + metrics2.avgQueueTime + metrics3.avgQueueTime) / 3).toFixed(2)} min
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm" style={{ color: '#666' }}>Abandonos Promedio:</p>
+                  <p className="text-sm" style={{ color: '#666' }}>Abandonos:</p>
                   <p className="text-xl font-bold" style={{ color: '#f44336' }}>
-                    {Math.round((metrics1.abandonedClients + metrics2.abandonedClients + metrics3.abandonedClients) / 3)} 
-                    ({((metrics1.abandonmentRate + metrics2.abandonmentRate + metrics3.abandonmentRate) / 3).toFixed(1)}%)
+                    {Math.round((metrics1.abandonedClients + metrics2.abandonedClients + metrics3.abandonedClients) / 3)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm" style={{ color: '#666' }}>Tiempo Total Promedio:</p>
-                  <p className="text-xl font-bold" style={{ color: '#cb691c' }}>
-                    {((metrics1.avgTotalTime + metrics2.avgTotalTime + metrics3.avgTotalTime) / 3).toFixed(2)} min
+                  <p className="text-sm" style={{ color: '#666' }}>Ingresos:</p>
+                  <p className="text-xl font-bold" style={{ color: '#4caf50' }}>
+                    Q{((metrics1.totalRevenue + metrics2.totalRevenue + metrics3.totalRevenue) / 3).toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -521,7 +493,7 @@ export default function Simulator({ analysisParams, originalData }) {
             {/* Info del período */}
             <div className="mt-6 p-4 rounded-xl" style={{ backgroundColor: '#f0f0f0' }}>
               <p className="text-sm" style={{ color: '#666' }}>
-                Período simulado: <strong>{metrics1.daysSimulated} día(s)</strong> × <strong>{metrics1.hoursPerDay} hora(s)</strong> = <strong>{metrics1.totalHoursSimulated} horas totales</strong>
+                Período: <strong>{metrics1.daysSimulated} día(s)</strong> × <strong>{metrics1.hoursPerDay} hora(s)</strong> = <strong>{metrics1.totalHoursSimulated} horas totales</strong>
               </p>
               <p className="text-sm mt-2" style={{ color: '#666' }}>
                 Horas: {metrics1.selectedPeriods}
@@ -529,124 +501,53 @@ export default function Simulator({ analysisParams, originalData }) {
             </div>
           </div>
 
-          {/* Tablas de datos lado a lado */}
+          {/* Tablas de datos */}
           <div className="grid grid-cols-3 gap-4">
-            {/* Tabla Simulación 1 */}
-            <div className="bg-white rounded-3xl p-4 shadow-lg">
-              <h3 className="text-lg font-bold mb-3" style={{ color: '#cb691c' }}>
-                Simulación #1 ({simulation1.length})
-              </h3>
-              <div className="overflow-auto" style={{ maxHeight: '500px' }}>
-                <table className="w-full border-collapse text-xs">
-                  <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-                    <tr style={{ backgroundColor: '#cb691c' }}>
-                      <th className="px-1 py-2 text-left text-white" style={{ fontSize: '10px' }}>Día</th>
-                      <th className="px-1 py-2 text-center text-white" style={{ fontSize: '10px' }}>No.</th>
-                      <th className="px-1 py-2 text-center text-white" style={{ fontSize: '10px' }}>Entrada</th>
-                      <th className="px-1 py-2 text-center text-white" style={{ fontSize: '10px' }}>Atendida</th>
-                      <th className="px-1 py-2 text-center text-white" style={{ fontSize: '10px' }}>Salida</th>
-                      <th className="px-1 py-2 text-center text-white" style={{ fontSize: '10px' }}>Cola</th>
-                      <th className="px-1 py-2 text-center text-white" style={{ fontSize: '10px' }}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {simulation1.map((row, idx) => (
-                      <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#f9f9f9' : '#fff' }}>
-                        <td className="px-1 py-1" style={{ fontSize: '10px', color: '#6c341e' }}>{row.day}</td>
-                        <td className="px-1 py-1 text-center" style={{ fontSize: '10px', color: '#666' }}>{row.order}</td>
-                        <td className="px-1 py-1 text-center" style={{ fontSize: '10px', color: '#666' }}>{row.entryTime}</td>
-                        <td className="px-1 py-1 text-center" style={{ fontSize: '10px', color: '#666' }}>{row.attendedTime}</td>
-                        <td className="px-1 py-1 text-center" style={{ fontSize: '10px', color: '#666' }}>{row.exitTime}</td>
-                        <td className="px-1 py-1 text-center font-semibold" style={{ fontSize: '10px', color: '#cb691c' }}>
-                          {row.queueTimeFormatted}
-                        </td>
-                        <td className="px-1 py-1 text-center font-semibold" style={{ fontSize: '10px', color: '#6c341e' }}>
-                          {row.totalTimeFormatted}
-                        </td>
+            {[
+              { data: simulation1, title: 'Simulación #1', color: '#cb691c' },
+              { data: simulation2, title: 'Simulación #2', color: '#6c341e' },
+              { data: simulation3, title: 'Simulación #3', color: '#fbd816' }
+            ].map((sim, idx) => (
+              <div key={idx} className="bg-white rounded-3xl p-4 shadow-lg">
+                <h3 className="text-lg font-bold mb-3" style={{ color: sim.color }}>
+                  {sim.title} ({sim.data.length})
+                </h3>
+                <div className="overflow-auto" style={{ maxHeight: '500px' }}>
+                  <table className="w-full border-collapse text-xs">
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                      <tr style={{ backgroundColor: sim.color }}>
+                        <th className="px-1 py-2 text-left" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Día</th>
+                        <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>No.</th>
+                        <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Clients</th>
+                        <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Entrada</th>
+                        <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Atendida</th>
+                        <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Salida</th>
+                        <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Cola</th>
+                        <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Total</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {sim.data.map((row, rowIdx) => (
+                        <tr key={rowIdx} style={{ backgroundColor: rowIdx % 2 === 0 ? '#f9f9f9' : '#fff' }}>
+                          <td className="px-1 py-1" style={{ fontSize: '9px', color: '#6c341e' }}>{row.day}</td>
+                          <td className="px-1 py-1 text-center" style={{ fontSize: '9px', color: '#666' }}>{row.order}</td>
+                          <td className="px-1 py-1 text-center font-bold" style={{ fontSize: '9px', color: '#4caf50' }}>{row.numClients}</td>
+                          <td className="px-1 py-1 text-center" style={{ fontSize: '9px', color: '#666' }}>{row.entryTime}</td>
+                          <td className="px-1 py-1 text-center" style={{ fontSize: '9px', color: '#666' }}>{row.attendedTime}</td>
+                          <td className="px-1 py-1 text-center" style={{ fontSize: '9px', color: '#666' }}>{row.exitTime}</td>
+                          <td className="px-1 py-1 text-center font-semibold" style={{ fontSize: '9px', color: '#cb691c' }}>
+                            {row.queueTimeFormatted}
+                          </td>
+                          <td className="px-1 py-1 text-center font-semibold" style={{ fontSize: '9px', color: '#6c341e' }}>
+                            {row.totalTimeFormatted}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-
-            {/* Tabla Simulación 2 */}
-            <div className="bg-white rounded-3xl p-4 shadow-lg">
-              <h3 className="text-lg font-bold mb-3" style={{ color: '#6c341e' }}>
-                Simulación #2 ({simulation2.length})
-              </h3>
-              <div className="overflow-auto" style={{ maxHeight: '500px' }}>
-                <table className="w-full border-collapse text-xs">
-                  <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-                    <tr style={{ backgroundColor: '#6c341e' }}>
-                      <th className="px-1 py-2 text-left text-white" style={{ fontSize: '10px' }}>Día</th>
-                      <th className="px-1 py-2 text-center text-white" style={{ fontSize: '10px' }}>No.</th>
-                      <th className="px-1 py-2 text-center text-white" style={{ fontSize: '10px' }}>Entrada</th>
-                      <th className="px-1 py-2 text-center text-white" style={{ fontSize: '10px' }}>Atendida</th>
-                      <th className="px-1 py-2 text-center text-white" style={{ fontSize: '10px' }}>Salida</th>
-                      <th className="px-1 py-2 text-center text-white" style={{ fontSize: '10px' }}>Cola</th>
-                      <th className="px-1 py-2 text-center text-white" style={{ fontSize: '10px' }}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {simulation2.map((row, idx) => (
-                      <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#f9f9f9' : '#fff' }}>
-                        <td className="px-1 py-1" style={{ fontSize: '10px', color: '#6c341e' }}>{row.day}</td>
-                        <td className="px-1 py-1 text-center" style={{ fontSize: '10px', color: '#666' }}>{row.order}</td>
-                        <td className="px-1 py-1 text-center" style={{ fontSize: '10px', color: '#666' }}>{row.entryTime}</td>
-                        <td className="px-1 py-1 text-center" style={{ fontSize: '10px', color: '#666' }}>{row.attendedTime}</td>
-                        <td className="px-1 py-1 text-center" style={{ fontSize: '10px', color: '#666' }}>{row.exitTime}</td>
-                        <td className="px-1 py-1 text-center font-semibold" style={{ fontSize: '10px', color: '#cb691c' }}>
-                          {row.queueTimeFormatted}
-                        </td>
-                        <td className="px-1 py-1 text-center font-semibold" style={{ fontSize: '10px', color: '#6c341e' }}>
-                          {row.totalTimeFormatted}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Tabla Simulación 3 */}
-            <div className="bg-white rounded-3xl p-4 shadow-lg">
-              <h3 className="text-lg font-bold mb-3" style={{ color: '#6c341e' }}>
-                Simulación #3 ({simulation3.length})
-              </h3>
-              <div className="overflow-auto" style={{ maxHeight: '500px' }}>
-                <table className="w-full border-collapse text-xs">
-                  <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-                    <tr style={{ backgroundColor: '#fbd816' }}>
-                      <th className="px-1 py-2 text-left" style={{ fontSize: '10px', color: '#6c341e' }}>Día</th>
-                      <th className="px-1 py-2 text-center" style={{ fontSize: '10px', color: '#6c341e' }}>No.</th>
-                      <th className="px-1 py-2 text-center" style={{ fontSize: '10px', color: '#6c341e' }}>Entrada</th>
-                      <th className="px-1 py-2 text-center" style={{ fontSize: '10px', color: '#6c341e' }}>Atendida</th>
-                      <th className="px-1 py-2 text-center" style={{ fontSize: '10px', color: '#6c341e' }}>Salida</th>
-                      <th className="px-1 py-2 text-center" style={{ fontSize: '10px', color: '#6c341e' }}>Cola</th>
-                      <th className="px-1 py-2 text-center" style={{ fontSize: '10px', color: '#6c341e' }}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {simulation3.map((row, idx) => (
-                      <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#f9f9f9' : '#fff' }}>
-                        <td className="px-1 py-1" style={{ fontSize: '10px', color: '#6c341e' }}>{row.day}</td>
-                        <td className="px-1 py-1 text-center" style={{ fontSize: '10px', color: '#666' }}>{row.order}</td>
-                        <td className="px-1 py-1 text-center" style={{ fontSize: '10px', color: '#666' }}>{row.entryTime}</td>
-                        <td className="px-1 py-1 text-center" style={{ fontSize: '10px', color: '#666' }}>{row.attendedTime}</td>
-                        <td className="px-1 py-1 text-center" style={{ fontSize: '10px', color: '#666' }}>{row.exitTime}</td>
-                        <td className="px-1 py-1 text-center font-semibold" style={{ fontSize: '10px', color: '#cb691c' }}>
-                          {row.queueTimeFormatted}
-                        </td>
-                        <td className="px-1 py-1 text-center font-semibold" style={{ fontSize: '10px', color: '#6c341e' }}>
-                          {row.totalTimeFormatted}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}

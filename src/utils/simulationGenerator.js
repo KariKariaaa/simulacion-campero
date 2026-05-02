@@ -29,15 +29,113 @@ export const timeToMinutes = (timeStr) => {
 };
 
 /**
+ * Genera el número de clientes basado en probabilidades
+ * @param {array} probabilities - Array de {customers, probability}
+ * @returns {number} Número de clientes (1-5)
+ */
+export const generateCustomerCount = (probabilities) => {
+  const random = Math.random();
+  let cumulative = 0;
+  
+  for (const prob of probabilities) {
+    cumulative += prob.probability;
+    if (random <= cumulative) {
+      return prob.customers;
+    }
+  }
+  
+  // Por defecto retornar 1 cliente
+  return 1;
+};
+
+/**
+ * Selecciona productos aleatorios basado en la cantidad de clientes
+ * @param {number} numClients - Número de clientes en la orden
+ * @param {array} products - Array de productos disponibles
+ * @returns {array} Array de productos seleccionados
+ */
+export const assignProducts = (numClients, products) => {
+  const selectedProducts = [];
+  
+  // Estrategia: asignar productos según tamaño del grupo
+  // 1 persona: productos individuales (Menú Campero, Menú Camperito 6pc, etc.)
+  // 2-3 personas: combos medianos (Menú Camperito 9pc, Combo Familiar 6-8pc)
+  // 4-5 personas: banquetes grandes (Banquete 18-34pc, Combo Familiar 10-12pc)
+  
+  if (numClients === 1) {
+    // Productos individuales o pequeños
+    const individualProducts = products.filter(p => 
+      p.nombre.includes('Menú Campero (2 pc)') ||
+      p.nombre.includes('Menú Super Campero') ||
+      p.nombre.includes('Menú Camperito 6 pc') ||
+      p.nombre.includes('Menú Hamburguesa') ||
+      p.nombre.includes('Menú Sandwich')
+    );
+    
+    if (individualProducts.length > 0) {
+      selectedProducts.push(individualProducts[Math.floor(Math.random() * individualProducts.length)]);
+    } else {
+      selectedProducts.push(products[Math.floor(Math.random() * products.length)]);
+    }
+  } else if (numClients <= 3) {
+    // Combos medianos
+    const mediumProducts = products.filter(p => 
+      p.nombre.includes('Menú Camperito 9 pc') ||
+      p.nombre.includes('Combo Familiar 6 pc') ||
+      p.nombre.includes('Combo Familiar 8 pc') ||
+      p.nombre.includes('Menú Alitas 6 pc') ||
+      p.nombre.includes('Menú Alitas 9 pc') ||
+      p.nombre.includes('Pizza')
+    );
+    
+    if (mediumProducts.length > 0) {
+      selectedProducts.push(mediumProducts[Math.floor(Math.random() * mediumProducts.length)]);
+    } else {
+      selectedProducts.push(products[Math.floor(Math.random() * products.length)]);
+    }
+  } else {
+    // Banquetes grandes para 4-5 personas
+    const largeProducts = products.filter(p => 
+      p.nombre.includes('Banquete') ||
+      p.nombre.includes('Combo Familiar 10 pc') ||
+      p.nombre.includes('Combo Familiar 12 pc')
+    );
+    
+    if (largeProducts.length > 0) {
+      selectedProducts.push(largeProducts[Math.floor(Math.random() * largeProducts.length)]);
+    } else {
+      selectedProducts.push(products[Math.floor(Math.random() * products.length)]);
+    }
+    
+    // Para 5 personas, podría agregar un producto adicional
+    if (numClients === 5 && Math.random() > 0.5) {
+      selectedProducts.push(products[Math.floor(Math.random() * products.length)]);
+    }
+  }
+  
+  return selectedProducts;
+};
+
+/**
  * Simula un período de tiempo con parámetros del modelo M/M/1
  * @param {number} lambda - Tasa de llegada (clientes por hora)
  * @param {number} mu - Tasa de servicio (clientes por hora)
  * @param {number} startTimeMinutes - Minutos desde medianoche para inicio
  * @param {number} durationMinutes - Duración de la simulación en minutos
  * @param {number} abandonmentRate - Porcentaje de abandono (0-100)
+ * @param {array} customerProbabilities - Probabilidades de cantidad de clientes
+ * @param {array} products - Array de productos disponibles
  * @returns {array} Array de clientes simulados
  */
-export const simulateQueuePeriod = (lambda, mu, startTimeMinutes, durationMinutes, abandonmentRate = 0) => {
+export const simulateQueuePeriod = (
+  lambda, 
+  mu, 
+  startTimeMinutes, 
+  durationMinutes, 
+  abandonmentRate = 0,
+  customerProbabilities = null,
+  products = null
+) => {
   // Convertir de clientes/hora a clientes/minuto
   const lambdaPerMin = lambda / 60;
   const muPerMin = mu / 60;
@@ -71,15 +169,30 @@ export const simulateQueuePeriod = (lambda, mu, startTimeMinutes, durationMinute
     const endServiceTime = startServiceTime + serviceTime;
     const queueTime = startServiceTime - entryTime;
 
+    // Generar cantidad de clientes (personas) para esta orden
+    const numClients = customerProbabilities 
+      ? generateCustomerCount(customerProbabilities)
+      : 1;
+
+    // Asignar productos si están disponibles
+    const assignedProducts = products 
+      ? assignProducts(numClients, products)
+      : [];
+
+    // Calcular total de la orden
+    const orderTotal = assignedProducts.reduce((sum, p) => sum + p.precio_venta, 0);
+
     // Criterio de abandono basado en porcentaje y tiempo de espera
-    // El abandono es más probable cuando el tiempo de espera es largo
     const abandonmentProbability = abandonmentRate / 100;
-    const waitTimeFactor = Math.min(queueTime / 30, 1); // Normalizar a 30 minutos
+    const waitTimeFactor = Math.min(queueTime / 30, 1);
     const finalAbandonmentProb = abandonmentProbability * (0.3 + 0.7 * waitTimeFactor);
     const abandoned = Math.random() < finalAbandonmentProb;
 
     simulatedClients.push({
       order: arrival.order,
+      numClients: numClients,
+      products: assignedProducts,
+      orderTotal: orderTotal,
       entryTime: minutesToTimeString(entryTime),
       attendedTime: minutesToTimeString(startServiceTime),
       exitTime: minutesToTimeString(endServiceTime),
@@ -111,11 +224,14 @@ export const calculateSimulationMetrics = (simulatedClients, lambda, mu) => {
   if (!simulatedClients || simulatedClients.length === 0) {
     return {
       totalClients: 0,
+      totalPeople: 0,
       completedClients: 0,
       abandonedClients: 0,
       avgQueueTime: 0,
       avgServiceTime: 0,
-      avgTotalTime: 0
+      avgTotalTime: 0,
+      totalRevenue: 0,
+      avgOrderValue: 0
     };
   }
 
@@ -134,14 +250,26 @@ export const calculateSimulationMetrics = (simulatedClients, lambda, mu) => {
     ? completedClients.reduce((sum, c) => sum + c.totalTime, 0) / completedClients.length
     : 0;
 
+  // Calcular total de personas atendidas
+  const totalPeople = simulatedClients.reduce((sum, c) => sum + c.numClients, 0);
+
+  // Calcular ingresos totales (solo órdenes completadas)
+  const totalRevenue = completedClients.reduce((sum, c) => sum + c.orderTotal, 0);
+  const avgOrderValue = completedClients.length > 0
+    ? totalRevenue / completedClients.length
+    : 0;
+
   return {
     totalClients: simulatedClients.length,
+    totalPeople: totalPeople,
     completedClients: completedClients.length,
     abandonedClients: abandonedClients.length,
     abandonmentRate: (abandonedClients.length / simulatedClients.length) * 100,
     avgQueueTime: parseFloat(avgQueueTime.toFixed(2)),
     avgServiceTime: parseFloat(avgServiceTime.toFixed(2)),
     avgTotalTime: parseFloat(avgTotalTime.toFixed(2)),
+    totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+    avgOrderValue: parseFloat(avgOrderValue.toFixed(2)),
     lambda: lambda.toFixed(2),
     mu: mu.toFixed(2),
     rho: (lambda / mu).toFixed(2),
