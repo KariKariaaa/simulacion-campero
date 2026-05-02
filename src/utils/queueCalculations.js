@@ -344,7 +344,68 @@ export const calculateQueueStatisticsFromInputs = (
   };
 };
 
+// Factorial simple
+const factorial = (n) => {
+  if (n === 0 || n === 1) return 1;
+  let result = 1;
+  for (let i = 2; i <= n; i++) result *= i;
+  return result;
+};
+
+// Modelo M/M/s real
+export const simulateMMs = (lambdaPerHour, muPerHour, servers) => {
+  const lambda = lambdaPerHour; // clientes/hora
+  const mu = muPerHour;
+
+  const rho = lambda / (servers * mu);
+
+  if (rho >= 1) {
+    return {
+      stable: false,
+      message: 'Sistema inestable (ρ ≥ 1)'
+    };
+  }
+
+  const a = lambda / mu;
+
+  // Calcular P0
+  let sum = 0;
+  for (let n = 0; n < servers; n++) {
+    sum += Math.pow(a, n) / factorial(n);
+  }
+
+  const lastTerm =
+    (Math.pow(a, servers) / factorial(servers)) * (1 / (1 - rho));
+
+  const P0 = 1 / (sum + lastTerm);
+
+  // Lq
+  const Lq =
+    (P0 * Math.pow(a, servers) * rho) /
+    (factorial(servers) * Math.pow(1 - rho, 2));
+
+  // Wq (horas)
+  const Wq = Lq / lambda;
+
+  // W (horas)
+  const W = Wq + (1 / mu);
+
+  return {
+    stable: true,
+    lambda,
+    mu,
+    servers,
+    rho,
+    Lq,
+    Wq, // horas
+    W,  // horas
+    serviceTime: 1 / mu // horas
+  };
+};
+
+
 // Simular con servidores adicionales (modelo simplificado)
+/*
 export const simulateWithAdditionalServers = (data, additionalServers = 1) => {
   if (!data || data.length === 0 || additionalServers <= 0) {
     return calculateQueueStatistics(data);
@@ -379,4 +440,5 @@ export const simulateWithAdditionalServers = (data, additionalServers = 1) => {
     console.error('Error in simulation:', error);
     return calculateQueueStatistics(data);
   }
-};
+};*/
+

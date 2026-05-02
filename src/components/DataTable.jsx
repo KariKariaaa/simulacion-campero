@@ -44,8 +44,9 @@ export default function DataTable({ data }) {
         <table className="w-full border-collapse">
           <thead>
             <tr style={{ backgroundColor: '#6c341e' }}>
+              <th className="px-4 py-3 text-left text-white font-semibold">No.</th>
               <th className="px-4 py-3 text-left text-white font-semibold">Día</th>
-              <th className="px-4 py-3 text-center text-white font-semibold">No.</th>
+              <th className="px-4 py-3 text-center text-white font-semibold">Clientes</th>
               <th className="px-4 py-3 text-center text-white font-semibold">Hora Entrada</th>
               <th className="px-4 py-3 text-center text-white font-semibold">Hora Atendida</th>
               <th className="px-4 py-3 text-center text-white font-semibold">Hora Salida</th>
@@ -56,13 +57,18 @@ export default function DataTable({ data }) {
           <tbody>
             {data.map((row, idx) => (
               <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#f9f9f9' : '#fff', borderBottom: '1px solid #eee' }}>
+                <td className="px-4 py-3" style={{ color: '#6c341e', fontWeight: 500 }}>{idx + 1}</td>
                 <td className="px-4 py-3" style={{ color: '#6c341e', fontWeight: 500 }}>{row.day}</td>
-                <td className="px-4 py-3 text-center" style={{ color: '#666' }}>{row.reg}</td>
-                <td className="px-4 py-3 text-center" style={{ color: '#666' }}>{row.entry}</td>
-                <td className="px-4 py-3 text-center" style={{ color: '#666' }}>{row.attended}</td>
+                <td className="px-4 py-3 text-center" style={{ color: '#666' }}>{row.no_cliente || '-'}</td>
+                <td className="px-4 py-3 text-center" style={{ color: '#666' }}>{row.entry || '-'}</td>
+                <td className="px-4 py-3 text-center" style={{ color: '#666' }}>{row.attended || '-'}</td>
                 <td className="px-4 py-3 text-center" style={{ color: '#666' }}>{row.exit}</td>
-                <td className="px-4 py-3 text-center font-semibold" style={{ color: '#cb691c' }}>{row.queue}</td>
-                <td className="px-4 py-3 text-center font-semibold" style={{ color: '#cb691c' }}>{row.total}</td>
+                <td className="px-4 py-3 text-center font-semibold" style={{ color: '#cb691c' }}>
+                  {row.queue && row.queue !== '00:00' ? row.queue : '-'}
+                </td>
+                <td className="px-4 py-3 text-center font-semibold" style={{ color: '#cb691c' }}>
+                  {row.total && row.total !== '00:00' ? row.total : '-'}
+                </td>
               </tr>
             ))}
           </tbody>

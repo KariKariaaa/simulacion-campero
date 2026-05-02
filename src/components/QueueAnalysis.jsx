@@ -4,7 +4,7 @@ import {
   calculateQueueStatistics,
   calculateQueueStatisticsFromInputs,
   analyzeCapacity,
-  simulateWithAdditionalServers,
+  simulateMMs,
   minutesToTime,
   durationToMinutes
 } from '../utils/queueCalculations';
@@ -58,10 +58,19 @@ export default function QueueAnalysis({ data, onAnalysisParams }) {
       }
     }, [data, onAnalysisParams]);
     const analysis = analyzeCapacity(statistics, targetWaitTime);
+
+    const hoursToMinutes = (h) => h * 60;
     
     let simulationStats = null;
+
     if (simulationServers > 0) {
-      simulationStats = simulateWithAdditionalServers(data, simulationServers);
+      const totalServers = 1 + simulationServers;
+
+      simulationStats = simulateMMs(
+        statistics.lambda, // clientes/hora
+        statistics.mu,     // clientes/hora
+        totalServers
+      );
     }
 
     if (statistics.totalCustomers === 0) {
@@ -396,9 +405,9 @@ export default function QueueAnalysis({ data, onAnalysisParams }) {
 
               <hr className="my-3 text-[#fbd9160f]"/>
 
-              <p>Espera: {minutesToTime(simulationStats.avgWaitTime)}</p>
-              <p>Servicio: {minutesToTime(simulationStats.avgServiceTime)}</p>
-              <p>Sistema: {minutesToTime(simulationStats.avgTimeInSystem)}</p>
+              <p>Espera: {minutesToTime(hoursToMinutes(simulationStats.Wq))}</p>
+              <p>Servicio: {minutesToTime(hoursToMinutes(simulationStats.serviceTime))}</p>
+              <p>Sistema: {minutesToTime(hoursToMinutes(simulationStats.W))}</p>
             </div>
           </div>
 
@@ -406,7 +415,10 @@ export default function QueueAnalysis({ data, onAnalysisParams }) {
           <div className="bg-white p-4 rounded-xl border text-center">
             <p className="text-sm text-gray-600">Reducción del tiempo en cola</p>
             <p className="text-2xl font-bold">
-              {((statistics.avgWaitTime - simulationStats.avgWaitTime) / statistics.avgWaitTime * 100).toFixed(1)}%
+              {(
+                (statistics.avgWaitTime - hoursToMinutes(simulationStats.Wq)) 
+                / statistics.avgWaitTime * 100
+              ).toFixed(1)}%
             </p>
           </div>
 

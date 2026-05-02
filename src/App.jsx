@@ -12,30 +12,108 @@ export default function App() {
   const [dataShow, setDataShow] = useState(null)
   const [analysisParams, setAnalysisParams] = useState(null)
   const [activeTab, setActiveTab] = useState('analysis')
-  const [datos, setDatos] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    const obtenerData = async () => {
-      const { data, error } = await supabase
+  // Cargar datos desde Supabase
+  const loadDataFromSupabase = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const { data: supabaseData, error: dbError } = await supabase
         .from('tbDatosCargados')
-        .select('*'); // puedes especificar columnas si quieres
+        .select('*');
 
-      if (error) {
-        console.error('Error al obtener datos:', error.message);
-      } else {
-        console.log("Datos: ", data);
-        // aquí manejas el estado como necesites
-        // setGastos(data);
-
-        if (data && data.length > 0) {
-          // ejemplo si quieres tomar algún valor
-          // setAlgo(data[0].campo);
-        }
+      if (dbError) {
+        throw new Error(dbError.message);
       }
-    };
 
-    obtenerData();
-  }, []);
+      if (!supabaseData || supabaseData.length === 0) {
+        setError('No hay datos en la base de datos');
+        setLoading(false);
+        return;
+      }
+
+      // Convertir datos de Supabase al formato esperado
+      const processedData = supabaseData.map((row, idx) => {
+        // Calcular tiempo en cola y tiempo total
+        const entrada = row.entrada ? timeStringToMinutes(row.entrada) : 0;
+        const atendida = row.atendida ? timeStringToMinutes(row.atendida) : 0;
+        const salida = row.salida ? timeStringToMinutes(row.salida) : 0;
+
+        let queueTimeMinutes = 0;
+        let totalTimeMinutes = 0;
+
+        if (entrada && atendida) {
+          queueTimeMinutes = Math.max(0, atendida - entrada);
+        }
+
+        if (entrada && salida) {
+          totalTimeMinutes = Math.max(0, salida - entrada);
+        }
+
+        return {
+          'Día': row.dia || 'Sin especificar',
+          'No. Registro': row.no_cliente || idx + 1,
+          'Hora Entrada': row.entrada || '',
+          'Hora Atendida': row.atendida || '',
+          'Hora Salida': row.salida || '',
+          'Tiempo en Cola': minutesToTimeFormat(queueTimeMinutes),
+          'Tiempo Total': minutesToTimeFormat(totalTimeMinutes),
+          'no_cliente': row.no_cliente || 0,
+          'abandoned': !row.salida || !row.total
+        };
+      });
+
+      // Datos para mostrar en tabla
+      const displayData = processedData.map((row, idx) => ({
+        day: row['Día'],
+        no_cliente: row['no_cliente'],
+        reg: row['No. Registro'],
+        entry: row['Hora Entrada'],
+        attended: row['Hora Atendida'],
+        exit: row['Hora Salida'] || '-',
+        queue: row['Tiempo en Cola'],
+        total: row['Tiempo Total'],
+        abandoned: row['abandoned']
+      }));
+
+      setData(processedData);
+      setDataShow(displayData);
+    } catch (err) {
+      setError('Error al cargar datos: ' + err.message);
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Función auxiliar para convertir HH:MM:SS a minutos
+  const timeStringToMinutes = (timeStr) => {
+    if (!timeStr) return 0;
+    const parts = timeStr.split(':');
+    const hours = parseInt(parts[0]) || 0;
+    const minutes = parseInt(parts[1]) || 0;
+    const seconds = parseInt(parts[2]) || 0;
+    return hours * 60 + minutes + seconds / 60;
+  };
+
+  // Función auxiliar para convertir minutos a HH:MM:SS
+  const minutesToTime = (minutes) => {
+    if (minutes === 0 || isNaN(minutes)) return '00:00:00';
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.floor(minutes % 60);
+    const secs = Math.round((minutes % 1) * 60);
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  // Función auxiliar para convertir minutos a MM:SS (para duraciones)
+  const minutesToTimeFormat = (minutes) => {
+    if (minutes === 0 || isNaN(minutes)) return '00:00';
+    const mins = Math.floor(minutes);
+    const secs = Math.round((minutes % 1) * 60);
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
 
   const handleDataLoaded = useCallback((loadedData) => {
     setData(loadedData)
@@ -53,6 +131,7 @@ export default function App() {
     setData(null)
     setDataShow(null)
     setAnalysisParams(null)
+    setError('')
   }, [])
 
   return (
@@ -108,7 +187,31 @@ export default function App() {
           {activeTab === 'analysis' && (
             <>
               {!data ? (
-                <FileUpload onDataLoaded={handleDataLoaded} ondDataShow={handleDataShow} />
+                <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+                  <h2 className="text-2xl font-bold mb-2" style={{ color: '#6c341e' }}>
+                    Cargar Datos de Análisis
+                  </h2>
+                  <p className="text-gray-600 text-sm mb-6">Carga los datos de la base de datos para comenzar el análisis de colas</p>
+                  
+                  <button
+                    onClick={loadDataFromSupabase}
+                    disabled={loading}
+                    className="px-8 py-4 rounded-full font-semibold transition border-2 text-lg"
+                    style={{
+                      borderColor: '#6c341e',
+                      backgroundColor: '#6c341e',
+                      color: '#fbd816'
+                    }}
+                  >
+                    {loading ? 'Cargando...' : 'Comenzar Análisis'}
+                  </button>
+
+                  {error && (
+                    <div className="mt-4 p-4 rounded-xl bg-red-50 border border-red-200">
+                      <p className="text-red-700 font-semibold">{error}</p>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="space-y-6">
                   {/* Botón Reset */}
@@ -122,7 +225,7 @@ export default function App() {
                         color: '#fbd816'
                       }}
                     >
-                      Cargar Nuevo Archivo
+                      Cargar Nuevo Análisis
                     </button>
                   </div>
 

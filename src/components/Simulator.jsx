@@ -351,7 +351,7 @@ export default function Simulator({ analysisParams, originalData }) {
                   className="p-4 rounded-xl mb-4"
                   style={{
                     backgroundColor: metrics1.isStable ? '#f1f8f6' : '#fdeaea',
-                    borderLeft: `4px solid ${getStatusColor(metrics1.isStable)}`,
+                    //borderLeft: `4px solid ${getStatusColor(metrics1.isStable)}`,
                   }}
                 >
                   <p className="font-bold text-sm" style={{ color: getStatusColor(metrics1.isStable) }}>
@@ -399,7 +399,7 @@ export default function Simulator({ analysisParams, originalData }) {
                   className="p-4 rounded-xl mb-4"
                   style={{
                     backgroundColor: metrics2.isStable ? '#f1f8f6' : '#fdeaea',
-                    borderLeft: `4px solid ${getStatusColor(metrics2.isStable)}`,
+                    //borderLeft: `4px solid ${getStatusColor(metrics2.isStable)}`,
                   }}
                 >
                   <p className="font-bold text-sm" style={{ color: getStatusColor(metrics2.isStable) }}>
@@ -446,7 +446,7 @@ export default function Simulator({ analysisParams, originalData }) {
                   className="p-4 rounded-xl mb-4"
                   style={{
                     backgroundColor: metrics3.isStable ? '#f1f8f6' : '#fdeaea',
-                    borderLeft: `4px solid ${getStatusColor(metrics3.isStable)}`,
+                    //borderLeft: `4px solid ${getStatusColor(metrics3.isStable)}`,
                   }}
                 >
                   <p className="font-bold text-sm" style={{ color: getStatusColor(metrics3.isStable) }}>
