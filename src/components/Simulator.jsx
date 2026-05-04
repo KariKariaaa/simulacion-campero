@@ -4,8 +4,9 @@ import {
   calculateSimulationMetrics, 
   timeToMinutes 
 } from '../utils/simulationGenerator'
+import { SupabaseClient } from '@supabase/supabase-js'
 
-export default function Simulator({ analysisParams, originalData }) {
+export default function Simulator({ analysisParams, originalData, products }) {
   // Configuración de simulación
   const [selectedHours, setSelectedHours] = useState(['13-14'])
   const [simulationType, setSimulationType] = useState('hora')
@@ -46,33 +47,7 @@ export default function Simulator({ analysisParams, originalData }) {
   };
 
   // Productos disponibles
-  const products = [
-    { idProductos: 1, nombre: 'Menú Camperito 6 pc', precio_venta: 58, precio_costo: 19.14, porcentaje: 2.28 },
-    { idProductos: 2, nombre: 'Menú Camperito 9 pc', precio_venta: 73, precio_costo: 24.09, porcentaje: 2.87 },
-    { idProductos: 3, nombre: 'Banquete Camperito 18 pc', precio_venta: 139, precio_costo: 45.87, porcentaje: 5.47 },
-    { idProductos: 4, nombre: 'Banquete Camperito 24 pc', precio_venta: 165, precio_costo: 54.45, porcentaje: 6.49 },
-    { idProductos: 5, nombre: 'Banquete Camperito 34 pc', precio_venta: 209, precio_costo: 68.97, porcentaje: 8.23 },
-    { idProductos: 6, nombre: 'Menú Alitas 6 pc', precio_venta: 64, precio_costo: 21.12, porcentaje: 2.52 },
-    { idProductos: 7, nombre: 'Menú Alitas 9 pc', precio_venta: 82, precio_costo: 27.06, porcentaje: 3.23 },
-    { idProductos: 8, nombre: 'Banquete Alitas 18 pc', precio_venta: 151, precio_costo: 49.83, porcentaje: 5.94 },
-    { idProductos: 9, nombre: 'Banquete Alitas 24 pc', precio_venta: 181, precio_costo: 59.73, porcentaje: 7.12 },
-    { idProductos: 10, nombre: 'Banquete Alitas 34 pc', precio_venta: 233, precio_costo: 76.89, porcentaje: 9.17 },
-    { idProductos: 11, nombre: 'Menú Campero (2 pc)', precio_venta: 53, precio_costo: 17.49, porcentaje: 2.09 },
-    { idProductos: 12, nombre: 'Menú Super Campero (3 pc)', precio_venta: 68, precio_costo: 22.44, porcentaje: 2.68 },
-    { idProductos: 13, nombre: 'Combo Familiar 6 pc', precio_venta: 140, precio_costo: 46.2, porcentaje: 5.51 },
-    { idProductos: 14, nombre: 'Combo Familiar 8 pc', precio_venta: 175, precio_costo: 57.75, porcentaje: 6.89 },
-    { idProductos: 15, nombre: 'Combo Familiar 10 pc', precio_venta: 205, precio_costo: 67.65, porcentaje: 8.07 },
-    { idProductos: 16, nombre: 'Combo Familiar 12 pc', precio_venta: 235, precio_costo: 77.55, porcentaje: 9.25 },
-    { idProductos: 17, nombre: 'Menú Hamburguesa Pollo (Clásica)', precio_venta: 36, precio_costo: 11.88, porcentaje: 1.42 },
-    { idProductos: 18, nombre: 'Menú Sandwich (Extra Crujiente)', precio_venta: 65, precio_costo: 21.45, porcentaje: 2.56 },
-    { idProductos: 19, nombre: 'Pizza 1 ingrediente (Grande)', precio_venta: 85, precio_costo: 28.05, porcentaje: 3.35 },
-    { idProductos: 20, nombre: 'Pizza Especialidad (Grande)', precio_venta: 100, precio_costo: 33, porcentaje: 3.94 },
-    { idProductos: 21, nombre: 'Pizza Camperitos', precio_venta: 65, precio_costo: 21.45, porcentaje: 2.56 },
-    { idProductos: 22, nombre: 'Pizza Combinadas (Promoción 2)', precio_venta: 125, precio_costo: 41.25, porcentaje: 4.92 },
-    { idProductos: 23, nombre: 'Tortillas (Unidad)', precio_venta: 2, precio_costo: 0.5, porcentaje: 0.07 },
-    { idProductos: 24, nombre: 'Flan', precio_venta: 13, precio_costo: 4.29, porcentaje: 0.51 },
-    { idProductos: 25, nombre: 'Cono Helado (Batido)', precio_venta: 18, precio_costo: 5.94, porcentaje: 0.71 }
-  ];
+  const productList = products;
 
   // Tasas específicas por hora
   const hourlyRates = {
@@ -446,6 +421,10 @@ export default function Simulator({ analysisParams, originalData }) {
                       <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Ingresos</span>
                       <span className="text-sm font-bold" style={{ color: '#4caf50' }}>Q{(sim.metrics.totalRevenue).toFixed(2)}</span>
                     </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Costos</span>
+                      <span className="text-sm font-bold" style={{ color: '#f44336' }}>Q{(sim.metrics.totalCost)}</span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -524,6 +503,8 @@ export default function Simulator({ analysisParams, originalData }) {
                         <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Salida</th>
                         <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Cola</th>
                         <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Total</th>
+                        <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Producto</th>
+                        <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Costo</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -541,6 +522,12 @@ export default function Simulator({ analysisParams, originalData }) {
                           <td className="px-1 py-1 text-center font-semibold" style={{ fontSize: '9px', color: '#6c341e' }}>
                             {row.totalTimeFormatted}
                           </td>
+                          <td className="px-1 py-1 text-center" style={{ fontSize: '9px', color: '#cb691c' }}>
+                            {row.products.map((p, i) => (
+                              <div key={i}>{p.nombre}</div>
+                            ))}
+                          </td>
+                          <td className="px-1 py-1 text-center" style={{ fontSize: '9px', color: '#6c341e' }}>Q{row.orderTotal}.00</td>
                         </tr>
                       ))}
                     </tbody>
@@ -551,6 +538,44 @@ export default function Simulator({ analysisParams, originalData }) {
           </div>
         </div>
       )}
+
+      {/* Productos */}
+      <div className="space-y-6">
+        {/* Tablas de datos */}
+          <div className="grid grid-cols-1 gap-4">
+            {[
+              { data: productList, title: 'Productos', color: '#cb691c' }
+            ].map((sim, idx) => (
+              <div key={idx} className="bg-white rounded-3xl p-4 shadow-lg">
+                <h3 className="text-lg font-bold mb-3 bg-white" style={{ color: '#6c341e' }}>
+                  Productos de Pollo Campero
+                </h3>
+                <div className="overflow-auto" style={{ maxHeight: '500px' }}>
+                  <table className="w-full border-collapse text-xs">
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                      <tr style={{ backgroundColor: '#6c341e' }}>
+                        <th className="px-1 py-2 text-left" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>No.</th>
+                        <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Nombre</th>
+                        <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Precio de Venta</th>
+                        <th className="px-1 py-2 text-center" style={{ fontSize: '9px', color: idx === 2 ? '#6c341e' : '#fff' }}>Precio de Costo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sim.data.map((row, rowIdx) => (
+                        <tr key={rowIdx} style={{ backgroundColor: rowIdx % 2 === 0 ? '#f9f9f9' : '#fff' }}>
+                          <td className="px-1 py-1" style={{ fontSize: '9px', color: '#6c341e' }}>{row.idProductos + 1}</td>
+                          <td className="px-1 py-1 text-center" style={{ fontSize: '9px', color: '#666' }}>{row.nombre}</td>
+                          <td className="px-1 py-1 text-center font-bold" style={{ fontSize: '9px', color: '#4caf50' }}>Q{(row.precio_venta).toFixed(2)}</td>
+                          <td className="px-1 py-1 text-center" style={{ fontSize: '9px', color: '#666' }}>Q{row.precio_costo.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+      </div>
     </div>
   )
 }

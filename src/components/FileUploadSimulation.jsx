@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Simulator from './Simulator'
 
-const FileUploadSimulation = ({ data, analysisParams, dataLoaded }) => {
+const FileUploadSimulation = ({ data, analysisParams, dataLoaded, products }) => {
   const [simulationData, setSimulationData] = useState(data)
 
   // Si ya hay datos cargados del análisis, mostrar directamente el simulador
@@ -16,6 +16,7 @@ const FileUploadSimulation = ({ data, analysisParams, dataLoaded }) => {
         <Simulator 
           analysisParams={analysisParams} 
           originalData={data}
+          products={products}
         />
       </div>
     )

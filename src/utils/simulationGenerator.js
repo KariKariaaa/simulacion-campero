@@ -181,6 +181,7 @@ export const simulateQueuePeriod = (
 
     // Calcular total de la orden
     const orderTotal = assignedProducts.reduce((sum, p) => sum + p.precio_venta, 0);
+    const orderTotalCost = assignedProducts.reduce((sum, p) => sum + p.precio_costo, 0);
 
     // Criterio de abandono basado en porcentaje y tiempo de espera
     const abandonmentProbability = abandonmentRate / 100;
@@ -193,6 +194,7 @@ export const simulateQueuePeriod = (
       numClients: numClients,
       products: assignedProducts,
       orderTotal: orderTotal,
+      orderTotalCost: orderTotalCost,
       entryTime: minutesToTimeString(entryTime),
       attendedTime: minutesToTimeString(startServiceTime),
       exitTime: minutesToTimeString(endServiceTime),
@@ -231,6 +233,7 @@ export const calculateSimulationMetrics = (simulatedClients, lambda, mu) => {
       avgServiceTime: 0,
       avgTotalTime: 0,
       totalRevenue: 0,
+      totalCost: 0,
       avgOrderValue: 0
     };
   }
@@ -255,6 +258,7 @@ export const calculateSimulationMetrics = (simulatedClients, lambda, mu) => {
 
   // Calcular ingresos totales (solo órdenes completadas)
   const totalRevenue = completedClients.reduce((sum, c) => sum + c.orderTotal, 0);
+  const totalCost = completedClients.reduce((sum, c) => sum + c.orderTotalCost, 0);
   const avgOrderValue = completedClients.length > 0
     ? totalRevenue / completedClients.length
     : 0;
@@ -269,6 +273,7 @@ export const calculateSimulationMetrics = (simulatedClients, lambda, mu) => {
     avgServiceTime: parseFloat(avgServiceTime.toFixed(2)),
     avgTotalTime: parseFloat(avgTotalTime.toFixed(2)),
     totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+    totalCost: parseFloat(totalCost.toFixed(2)),
     avgOrderValue: parseFloat(avgOrderValue.toFixed(2)),
     lambda: lambda.toFixed(2),
     mu: mu.toFixed(2),

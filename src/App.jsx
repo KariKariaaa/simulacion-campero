@@ -36,6 +36,7 @@ export default function App() {
 
     fetchProductos();
   }, []);
+  
   // Cargar datos desde Supabase
   const loadDataFromSupabase = async () => {
     setLoading(true);
@@ -267,6 +268,7 @@ export default function App() {
                 data={data} 
                 analysisParams={analysisParams}
                 dataLoaded={!!data}
+                products={productos}
               />
             </div>
           )}
