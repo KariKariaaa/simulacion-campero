@@ -429,31 +429,31 @@ export default function Simulator({ analysisParams, originalData, products }) {
                     </div>
                     <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
                       <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tasa de llegada</span>
-                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.lambdaReal)}</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.lambdaReal)} clientes/hora</span>
                     </div>
                     <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
                       <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tasa de servicio</span>
-                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.muReal)}</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.muReal)} clientes/hora</span>
                     </div>
                     <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
                       <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tiempo Promedio en Cola</span>
-                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.avgQueueTime)}</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.avgQueueTime)} min</span>
                     </div>
                     <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
                       <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tiempo Promedio de Servicio</span>
-                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.avgServiceTime)}</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.avgServiceTime)} min</span>
                     </div>
                     <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
                       <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tiempo Promedio en Sistema</span>
-                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.avgTotalTime)}</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.avgTotalTime)} min</span>
                     </div>
                     <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
                       <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tiempo Mínimo en Cola</span>
-                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.minQueueTime)}</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.minQueueTime)} min</span>
                     </div>
                     <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
                       <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tiempo Máximo en Cola</span>
-                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.maxQueueTime)}</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.maxQueueTime)} min</span>
                     </div>
                   </div>
                 </div>
