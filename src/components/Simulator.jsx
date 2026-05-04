@@ -416,10 +416,6 @@ export default function Simulator({ analysisParams, originalData, products }) {
                       </span>
                     </div>
                     <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
-                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>T. Cola</span>
-                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{sim.metrics.avgQueueTime} min</span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
                       <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Ingresos</span>
                       <span className="text-sm font-bold" style={{ color: '#4caf50' }}>Q{(sim.metrics.totalRevenue).toFixed(2)}</span>
                     </div>
