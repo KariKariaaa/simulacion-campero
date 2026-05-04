@@ -87,6 +87,8 @@ export default function Simulator({ analysisParams, originalData, products }) {
           daysToSimulate = duration * 30
         }
 
+        const horasTotales = daysToSimulate * selectedHours.length
+
         // Función para generar una simulación completa
         const generateSimulation = () => {
           let allClients = []
@@ -113,7 +115,7 @@ export default function Simulator({ analysisParams, originalData, products }) {
                 durationMinutes,
                 hourConfig.abandonment,
                 hourProbabilities,
-                products
+                products,
               )
 
               // Agregar información de día y hora
@@ -147,9 +149,9 @@ export default function Simulator({ analysisParams, originalData, products }) {
         const avgMu = selectedHours.reduce((sum, h) => sum + hourlyRates[h].mu, 0) / selectedHours.length
 
         // Calcular métricas para las 3 simulaciones
-        const met1 = calculateSimulationMetrics(sim1Data, avgLambda, avgMu)
-        const met2 = calculateSimulationMetrics(sim2Data, avgLambda, avgMu)
-        const met3 = calculateSimulationMetrics(sim3Data, avgLambda, avgMu)
+        const met1 = calculateSimulationMetrics(sim1Data, horasTotales)
+        const met2 = calculateSimulationMetrics(sim2Data, horasTotales)
+        const met3 = calculateSimulationMetrics(sim3Data, horasTotales)
 
         // Agregar info adicional a cada métrica
         met1.daysSimulated = daysToSimulate
@@ -394,7 +396,7 @@ export default function Simulator({ analysisParams, originalData, products }) {
                       {getStatusMessage(sim.metrics.isStable, parseFloat(sim.metrics.rho))}
                     </p>
                     <p className="text-xs mt-2" style={{ color: '#333' }}>
-                      ρ = {sim.metrics.rho} ({sim.metrics.utilization}%)
+                      ρ = {(sim.metrics.rho * 100).toFixed(1)}% (λ = {sim.metrics.lambdaReal} clientes/hora, μ = {sim.metrics.muReal} clientes/hora)
                     </p>
                   </div>
 
@@ -422,8 +424,36 @@ export default function Simulator({ analysisParams, originalData, products }) {
                       <span className="text-sm font-bold" style={{ color: '#4caf50' }}>Q{(sim.metrics.totalRevenue).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
-                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Costos</span>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Costos (Productos)</span>
                       <span className="text-sm font-bold" style={{ color: '#f44336' }}>Q{(sim.metrics.totalCost)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tasa de llegada</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.lambdaReal)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tasa de servicio</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.muReal)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tiempo Promedio en Cola</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.avgQueueTime)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tiempo Promedio de Servicio</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.avgServiceTime)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tiempo Promedio en Sistema</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.avgTotalTime)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tiempo Mínimo en Cola</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.minQueueTime)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tiempo Máximo en Cola</span>
+                      <span className="text-sm font-bold" style={{ color: '#cb691c' }}>{(sim.metrics.maxQueueTime)}</span>
                     </div>
                   </div>
                 </div>
@@ -446,12 +476,6 @@ export default function Simulator({ analysisParams, originalData, products }) {
                   <p className="text-sm" style={{ color: '#666' }}>Personas:</p>
                   <p className="text-xl font-bold" style={{ color: '#4caf50' }}>
                     {Math.round((metrics1.totalPeople + metrics2.totalPeople + metrics3.totalPeople) / 3)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm" style={{ color: '#666' }}>T. Cola:</p>
-                  <p className="text-xl font-bold" style={{ color: '#cb691c' }}>
-                    {((metrics1.avgQueueTime + metrics2.avgQueueTime + metrics3.avgQueueTime) / 3).toFixed(2)} min
                   </p>
                 </div>
                 <div>

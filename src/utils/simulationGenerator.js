@@ -222,63 +222,71 @@ export const simulateQueuePeriod = (
  * @param {number} mu - Tasa de servicio original (para referencia)
  * @returns {object} Objeto con métricas calculadas
  */
-export const calculateSimulationMetrics = (simulatedClients, lambda, mu) => {
+export const calculateSimulationMetrics = (simulatedClients, horasTotales) => {
   if (!simulatedClients || simulatedClients.length === 0) {
-    return {
-      totalClients: 0,
-      totalPeople: 0,
-      completedClients: 0,
-      abandonedClients: 0,
-      avgQueueTime: 0,
-      avgServiceTime: 0,
-      avgTotalTime: 0,
-      totalRevenue: 0,
-      totalCost: 0,
-      avgOrderValue: 0
-    };
+    return {};
   }
 
+  const totalClients = simulatedClients.length;
   const completedClients = simulatedClients.filter(c => !c.abandoned);
   const abandonedClients = simulatedClients.filter(c => c.abandoned);
 
-  const avgQueueTime = completedClients.length > 0
-    ? completedClients.reduce((sum, c) => sum + c.queueTime, 0) / completedClients.length
-    : 0;
-
-  const avgServiceTime = completedClients.length > 0
-    ? completedClients.reduce((sum, c) => sum + c.serviceTime, 0) / completedClients.length
-    : 0;
-
-  const avgTotalTime = completedClients.length > 0
-    ? completedClients.reduce((sum, c) => sum + c.totalTime, 0) / completedClients.length
-    : 0;
-
-  // Calcular total de personas atendidas
+  //Calcular total de personas atendidas
   const totalPeople = simulatedClients.reduce((sum, c) => sum + c.numClients, 0);
 
-  // Calcular ingresos totales (solo órdenes completadas)
+  //Calcular ingresos totales (solo órdenes completadas)
   const totalRevenue = completedClients.reduce((sum, c) => sum + c.orderTotal, 0);
   const totalCost = completedClients.reduce((sum, c) => sum + c.orderTotalCost, 0);
-  const avgOrderValue = completedClients.length > 0
-    ? totalRevenue / completedClients.length
-    : 0;
+  const avgOrderValue = completedClients.length > 0 ? totalRevenue / completedClients.length : 0;
+
+  //Tiempo total de simulación (en minutos)
+  const firstEntry = Math.min(...simulatedClients.map(c => timeToMinutes(c.entryTime)));
+  const lastExit = Math.max(...simulatedClients.map(c => timeToMinutes(c.exitTime)));
+  const totalTime = lastExit - firstEntry;
+
+  //λ REAL (clientes por minuto)
+  const lambdaReal = totalClients / horasTotales;
+
+  //μ REAL (clientes atendidos por minuto)
+  const totalServiceTime = completedClients.reduce((sum, c) => sum + c.serviceTime, 0);
+  const muReal = completedClients.length / totalServiceTime;
+
+  //ρ (utilización)
+  const rho = lambdaReal / (muReal*60);
+
+  //Promedios
+  const avgQueueTime = completedClients.reduce((sum, c) => sum + c.queueTime, 0) / completedClients.length;
+  const avgServiceTime = completedClients.reduce((sum, c) => sum + c.serviceTime, 0) / completedClients.length;
+  const avgTotalTime = completedClients.reduce((sum, c) => sum + c.totalTime, 0) / completedClients.length;
+
+  //Min y Max cola
+  const minQueueTime = Math.min(...completedClients.map(c => c.queueTime));
+  const maxQueueTime = Math.max(...completedClients.map(c => c.queueTime));
 
   return {
     totalClients: simulatedClients.length,
     totalPeople: totalPeople,
     completedClients: completedClients.length,
     abandonedClients: abandonedClients.length,
-    abandonmentRate: (abandonedClients.length / simulatedClients.length) * 100,
-    avgQueueTime: parseFloat(avgQueueTime.toFixed(2)),
-    avgServiceTime: parseFloat(avgServiceTime.toFixed(2)),
-    avgTotalTime: parseFloat(avgTotalTime.toFixed(2)),
+
+    abandonmentRate: (abandonedClients.length / totalClients) * 100,
+
+    lambdaReal: parseFloat((lambdaReal).toFixed(2)), // por hora
+    muReal: parseFloat((muReal * 60).toFixed(2)), // por hora
+    rho: parseFloat(rho.toFixed(2)),
+    utilization: parseFloat((rho * 100).toFixed(1)),
+
+    avgQueueTime: minutesToDurationString(avgQueueTime),
+    avgServiceTime: minutesToDurationString(avgServiceTime),
+    avgTotalTime: minutesToDurationString(avgTotalTime),
+
+    minQueueTime: minutesToDurationString(minQueueTime),
+    maxQueueTime: minutesToDurationString(maxQueueTime),
+
     totalRevenue: parseFloat(totalRevenue.toFixed(2)),
     totalCost: parseFloat(totalCost.toFixed(2)),
     avgOrderValue: parseFloat(avgOrderValue.toFixed(2)),
-    lambda: lambda.toFixed(2),
-    mu: mu.toFixed(2),
-    rho: (lambda / mu).toFixed(2),
-    utilization: ((lambda / mu) * 100).toFixed(1),
-    isStable: lambda < mu
+
+    isStable: rho < 1
   };
 };

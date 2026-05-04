@@ -28,7 +28,6 @@ export default function App() {
         }
 
         setProductos(productosData);
-        console.log('Productos cargados:', productosData);
       } catch (err) {
         console.error('Error fetching productos:', err);
       }

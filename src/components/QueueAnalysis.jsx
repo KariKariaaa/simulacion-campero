@@ -18,13 +18,20 @@ export default function QueueAnalysis({ data, onAnalysisParams }) {
   const [muInput, setMuInput] = useState('35.05');
   const [abandonoInput, setAbandonoInput] = useState('1.84');
   const [useManualInputs, setUseManualInputs] = useState(true);
+  let tiempoMaximo = 0;
+  let tiempoMinimo = 0; // Ejemplo de tiempo mínimo para análisis crítico
 
   if (!data || !Array.isArray(data) || data.length === 0) {
+    //const minQueueTime = Math.min(...data.map(c => c.'Tiempo en Cola'));
+    //const maxQueueTime = Math.max(...data.map(c => c.'Tiempo en Cola'));
     return (
       <div className="bg-red-50 p-8 rounded-3xl shadow-sm border border-red-200">
         <p className="text-red-700 font-semibold">Error: No hay datos para analizar</p>
       </div>
     );
+  }else{
+    tiempoMaximo = Math.max(...data.map(c => durationToMinutes(c['Tiempo en Cola'])));
+    tiempoMinimo = Math.min(...data.map(c => durationToMinutes(c['Tiempo en Cola'])));
   }
 
   try {
@@ -211,14 +218,14 @@ export default function QueueAnalysis({ data, onAnalysisParams }) {
               <div className="p-4 rounded-xl" style={{ backgroundColor: '#f0f0f0' }}>
                 <p className="text-xs uppercase" style={{ color: '#666' }}>Tiempo mínimo en cola</p>
                 <p className="text-2xl font-bold" style={{ color: '#cb691c' }}>
-                  {minutesToTime(statistics.minWaitTime)}
+                  {minutesToTime(tiempoMinimo)}
                 </p>
               </div>
 
               <div className="p-4 rounded-xl" style={{ backgroundColor: '#f0f0f0' }}>
                 <p className="text-xs uppercase" style={{ color: '#666' }}>Tiempo máximo en cola</p>
                 <p className="text-2xl font-bold" style={{ color: '#cb691c' }}>
-                  {minutesToTime(statistics.maxWaitTime)}
+                  {minutesToTime(tiempoMaximo)}
                 </p>
               </div>
 
