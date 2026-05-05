@@ -216,13 +216,77 @@ export const simulateQueuePeriod = (
 };
 
 /**
+ * Calcula los gastos operacionales basados en gastos fijos y variables
+ * Convierte gastos mensuales a gastos por hora simulada
+ * @param {array} expenses - Array de gastos con {nombre, tipo, monto}
+ * @param {number} daysSimulated - Días simulados
+ * @param {number} selectedHoursCount - Cantidad de horas seleccionadas por día
+ * @returns {object} Objeto con desglose de gastos {fixedTotal, variableTotal, total, hourlyFixed, hourlyVariable}
+ */
+export const calculateExpenses = (expenses, daysSimulated, selectedHoursCount) => {
+  if (!expenses || expenses.length === 0) {
+    return {
+      fixedTotal: 0,
+      variableTotal: 0,
+      total: 0,
+      hourlyFixed: 0,
+      hourlyVariable: 0,
+      breakdown: []
+    };
+  }
+
+  const WORKING_HOURS_PER_DAY = 13; // 8am to 9pm
+  const SIMULATION_HOURS_RANGE = 3; // 1pm to 4pm
+
+  // Separar gastos fijos y variables
+  const fixedExpenses = expenses.filter(e => e.tipo === 'Fijo');
+  const variableExpenses = expenses.filter(e => e.tipo === 'Variable');
+
+  // Calcular gasto total de cada tipo
+  const fixedTotalMonthly = fixedExpenses.reduce((sum, e) => sum + parseFloat(e.monto), 0);
+  const variableTotalMonthly = variableExpenses.reduce((sum, e) => sum + parseFloat(e.monto), 0);
+
+  // Convertir a gastos por hora: gasto mensual / 13 horas working day
+  const fixedHourly = fixedTotalMonthly / WORKING_HOURS_PER_DAY;
+  const variableHourly = variableTotalMonthly / WORKING_HOURS_PER_DAY;
+
+  // Calcular gastos totales para la simulación
+  // Formula: total de horas simuladas × gasto por hora
+  const totalHoursSimulated = daysSimulated * selectedHoursCount;
+  const fixedTotal = totalHoursSimulated * fixedHourly;
+  const variableTotal = totalHoursSimulated * variableHourly;
+
+  const breakdown = expenses.map(e => {
+    const monthlyAmount = parseFloat(e.monto);
+    const hourlyAmount = monthlyAmount / WORKING_HOURS_PER_DAY;
+    const simulationAmount = totalHoursSimulated * hourlyAmount;
+    return {
+      nombre: e.nombre,
+      tipo: e.tipo,
+      montoMensual: parseFloat(monthlyAmount.toFixed(2)),
+      montoPorHora: parseFloat(hourlyAmount.toFixed(2)),
+      montoSimulacion: parseFloat(simulationAmount.toFixed(2))
+    };
+  });
+
+  return {
+    fixedTotal: parseFloat(fixedTotal.toFixed(2)),
+    variableTotal: parseFloat(variableTotal.toFixed(2)),
+    total: parseFloat((fixedTotal + variableTotal).toFixed(2)),
+    hourlyFixed: parseFloat(fixedHourly.toFixed(2)),
+    hourlyVariable: parseFloat(variableHourly.toFixed(2)),
+    breakdown: breakdown
+  };
+};
+
+/**
  * Calcula métricas de los clientes simulados
  * @param {array} simulatedClients - Array de clientes simulados
  * @param {number} lambda - Tasa de llegada original (para referencia)
  * @param {number} mu - Tasa de servicio original (para referencia)
  * @returns {object} Objeto con métricas calculadas
  */
-export const calculateSimulationMetrics = (simulatedClients, horasTotales) => {
+export const calculateSimulationMetrics = (simulatedClients, horasTotales, expensesData = null) => {
   if (!simulatedClients || simulatedClients.length === 0) {
     return {};
   }
@@ -263,6 +327,11 @@ export const calculateSimulationMetrics = (simulatedClients, horasTotales) => {
   const minQueueTime = Math.min(...completedClients.map(c => c.queueTime));
   const maxQueueTime = Math.max(...completedClients.map(c => c.queueTime));
 
+  // Calcular gastos operacionales
+  const operationalExpenses = expensesData ? expensesData.total : 0;
+  const totalExpenses = totalCost + operationalExpenses;
+  const profit = totalRevenue - totalExpenses;
+
   return {
     totalClients: simulatedClients.length,
     totalPeople: totalPeople,
@@ -287,6 +356,11 @@ export const calculateSimulationMetrics = (simulatedClients, horasTotales) => {
     totalCost: parseFloat(totalCost.toFixed(2)),
     avgOrderValue: parseFloat(avgOrderValue.toFixed(2)),
 
+    // Nuevos campos para gastos operacionales
+    operationalExpenses: parseFloat(operationalExpenses.toFixed(2)),
+    totalExpenses: parseFloat(totalExpenses.toFixed(2)),
+    profit: parseFloat(profit.toFixed(2)),
+    
     isStable: rho < 1
   };
 };

@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { 
   simulateQueuePeriod, 
-  calculateSimulationMetrics, 
+  calculateSimulationMetrics,
+  calculateExpenses,
   timeToMinutes 
 } from '../utils/simulationGenerator'
-import { SupabaseClient } from '@supabase/supabase-js'
+import { supabase } from '../supabaseClient'
 
-export default function Simulator({ analysisParams, originalData, products }) {
+export default function Simulator({ analysisParams, originalData, products, expenses }) {
   // Configuración de simulación
   const [selectedHours, setSelectedHours] = useState(['13-14'])
   const [simulationType, setSimulationType] = useState('hora')
@@ -77,7 +78,7 @@ export default function Simulator({ analysisParams, originalData, products }) {
     
     setIsSimulating(true)
     
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         // Calcular días a simular
         let daysToSimulate = duration
@@ -148,30 +149,39 @@ export default function Simulator({ analysisParams, originalData, products }) {
         const avgLambda = selectedHours.reduce((sum, h) => sum + hourlyRates[h].lambda, 0) / selectedHours.length
         const avgMu = selectedHours.reduce((sum, h) => sum + hourlyRates[h].mu, 0) / selectedHours.length
 
+        // Calcular gastos operacionales
+        const expensesData = calculateExpenses(expenses, daysToSimulate, selectedHours.length)
+
         // Calcular métricas para las 3 simulaciones
-        const met1 = calculateSimulationMetrics(sim1Data, horasTotales)
-        const met2 = calculateSimulationMetrics(sim2Data, horasTotales)
-        const met3 = calculateSimulationMetrics(sim3Data, horasTotales)
+        const met1 = calculateSimulationMetrics(sim1Data, horasTotales, expensesData)
+        const met2 = calculateSimulationMetrics(sim2Data, horasTotales, expensesData)
+        const met3 = calculateSimulationMetrics(sim3Data, horasTotales, expensesData)
 
         // Agregar info adicional a cada métrica
         met1.daysSimulated = daysToSimulate
         met1.hoursPerDay = selectedHours.length
         met1.totalHoursSimulated = daysToSimulate * selectedHours.length
         met1.selectedPeriods = selectedHours.map(h => hourlyRates[h].label).join(', ')
+        met1.expensesData = expensesData
 
         met2.daysSimulated = daysToSimulate
         met2.hoursPerDay = selectedHours.length
         met2.totalHoursSimulated = daysToSimulate * selectedHours.length
         met2.selectedPeriods = selectedHours.map(h => hourlyRates[h].label).join(', ')
+        met2.expensesData = expensesData
 
         met3.daysSimulated = daysToSimulate
         met3.hoursPerDay = selectedHours.length
         met3.totalHoursSimulated = daysToSimulate * selectedHours.length
         met3.selectedPeriods = selectedHours.map(h => hourlyRates[h].label).join(', ')
+        met3.expensesData = expensesData
 
         setMetrics1(met1)
         setMetrics2(met2)
         setMetrics3(met3)
+
+        // Guardar datos de simulación en Supabase
+        await saveSimulationData(simulationType, duration, daysToSimulate * selectedHours.length, sim1Data, sim2Data, sim3Data)
 
       } catch (error) {
         console.error('Error en simulación:', error)
@@ -190,6 +200,64 @@ export default function Simulator({ analysisParams, originalData, products }) {
     if (rho > 0.9) return 'Sistema Estable - Alta Utilización'
     if (rho > 0.7) return 'Sistema Estable - Utilización Moderada'
     return 'Sistema Estable - Baja Utilización'
+  }
+
+  // Convertir formato MM:SS a HH:MM:SS
+  const convertDurationToTime = (durationStr) => {
+    return `00:${durationStr}`
+  }
+
+  // Guardar datos de simulación en Supabase
+  const saveSimulationData = async (simulationType, duration, totalHoursSimulated, simulation1Data, simulation2Data, simulation3Data) => {
+    try {
+      // 1. Insertar en tbSimulacion
+      const simTypeLabel = simulationType === 'hora' ? 'Día' : simulationType === 'semana' ? 'Semana' : 'Mes'
+      const durationLabel = `${duration} ${simulationType === 'hora' ? 'día(s)' : simulationType === 'semana' ? 'semana(s)' : 'mes(es)'}`
+      
+      const { data: simData, error: simError } = await supabase
+        .from('tbSimulacion')
+        .insert({
+          tipoSimulacion: simTypeLabel,
+          duracion: durationLabel,
+          horas: totalHoursSimulated
+        })
+        .select()
+      
+      if (simError) throw simError
+      const idSimulacion = simData[0].idSimulacion
+      
+      // 2. Insertar escenarios
+      await insertEscenarioData(idSimulacion, simulation1Data, 'tbEscenario1')
+      await insertEscenarioData(idSimulacion, simulation2Data, 'tbEscenario2')
+      await insertEscenarioData(idSimulacion, simulation3Data, 'tbEscenario3')
+      
+      console.log('Simulación guardada exitosamente con ID:', idSimulacion)
+    } catch (error) {
+      console.error('Error al guardar simulación:', error)
+    }
+  }
+
+  // Insertar datos en tabla de escenario
+  const insertEscenarioData = async (idSimulacion, simulationData, tableName) => {
+    const rows = simulationData.map(row => ({
+      idSimulacion,
+      dia: row.day,
+      no_orden: row.order,
+      no_clientes: row.numClients,
+      entrada: row.entryTime,
+      atendida: row.attendedTime,
+      salida: row.exitTime,
+      cola: convertDurationToTime(row.queueTimeFormatted),
+      total: convertDurationToTime(row.totalTimeFormatted),
+      producto: row.products.map(p => p.nombre).join(', '),
+      costo: row.orderTotal
+    }))
+
+    const { error } = await supabase
+      .from(tableName)
+      .insert(rows)
+
+    if (error) throw error
   }
 
   return (
@@ -421,7 +489,19 @@ export default function Simulator({ analysisParams, originalData, products }) {
                     </div>
                     <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
                       <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Costos (Productos)</span>
-                      <span className="text-sm font-bold" style={{ color: '#f44336' }}>Q{(sim.metrics.totalCost)}</span>
+                      <span className="text-sm font-bold" style={{ color: '#f44336' }}>Q{(sim.metrics.totalCost).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#fef0e8' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Gastos Operacionales</span>
+                      <span className="text-sm font-bold" style={{ color: '#d97706' }}>Q{(sim.metrics.operationalExpenses).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f5e6d3' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Gastos Totales</span>
+                      <span className="text-sm font-bold" style={{ color: '#dc2626' }}>Q{(sim.metrics.totalExpenses).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: sim.metrics.profit >= 0 ? '#f0fdf4' : '#fef2f2' }}>
+                      <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Ganancia Neta</span>
+                      <span className="text-sm font-bold" style={{ color: sim.metrics.profit >= 0 ? '#16a34a' : '#dc2626' }}>Q{(sim.metrics.profit).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center p-2 rounded-lg" style={{ backgroundColor: '#f0f0f0' }}>
                       <span className="text-xs font-semibold" style={{ color: '#6c341e' }}>Tasa de llegada</span>
@@ -461,7 +541,7 @@ export default function Simulator({ analysisParams, originalData, products }) {
               <h3 className="font-bold text-lg mb-4" style={{ color: '#6c341e' }}>
                 Promedios de las 3 Simulaciones
               </h3>
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-6 gap-4">
                 <div>
                   <p className="text-sm" style={{ color: '#666' }}>Órdenes:</p>
                   <p className="text-xl font-bold" style={{ color: '#cb691c' }}>
@@ -486,6 +566,18 @@ export default function Simulator({ analysisParams, originalData, products }) {
                     Q{((metrics1.totalRevenue + metrics2.totalRevenue + metrics3.totalRevenue) / 3).toFixed(2)}
                   </p>
                 </div>
+                <div>
+                  <p className="text-sm" style={{ color: '#666' }}>Gastos Op.:</p>
+                  <p className="text-xl font-bold" style={{ color: '#d97706' }}>
+                    Q{((metrics1.operationalExpenses + metrics2.operationalExpenses + metrics3.operationalExpenses) / 3).toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm" style={{ color: '#666' }}>Ganancia Neta:</p>
+                  <p className="text-xl font-bold" style={{ color: ((metrics1.profit + metrics2.profit + metrics3.profit) / 3) >= 0 ? '#16a34a' : '#dc2626' }}>
+                    Q{((metrics1.profit + metrics2.profit + metrics3.profit) / 3).toFixed(2)}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -498,6 +590,54 @@ export default function Simulator({ analysisParams, originalData, products }) {
                 Horas: {metrics1.selectedPeriods}
               </p>
             </div>
+
+            {/* Desglose de Gastos */}
+            {metrics1.expensesData && metrics1.expensesData.breakdown && metrics1.expensesData.breakdown.length > 0 && (
+              <div className="mt-6 bg-white rounded-2xl p-6 shadow-lg border-l-4" style={{ borderLeftColor: '#d97706' }}>
+                <h3 className="font-bold text-lg mb-4" style={{ color: '#6c341e' }}>
+                  Desglose de Gastos Operacionales
+                </h3>
+                <div className="overflow-auto">
+                  <table className="w-full border-collapse text-sm">
+                    <thead>
+                      <tr style={{ backgroundColor: '#fef3e8' }}>
+                        <th className="px-4 py-2 text-left" style={{ color: '#6c341e' }}>Gasto</th>
+                        <th className="px-4 py-2 text-center" style={{ color: '#6c341e' }}>Tipo</th>
+                        <th className="px-4 py-2 text-right" style={{ color: '#6c341e' }}>Monto Mensual</th>
+                        <th className="px-4 py-2 text-right" style={{ color: '#6c341e' }}>Por Hora</th>
+                        <th className="px-4 py-2 text-right" style={{ color: '#6c341e' }}>En Simulación</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {metrics1.expensesData.breakdown.map((expense, idx) => (
+                        <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#fafaf9' : '#fff' }}>
+                          <td className="px-4 py-2" style={{ color: '#333' }}>{expense.nombre}</td>
+                          <td className="px-4 py-2 text-center" style={{ color: '#6c341e', fontWeight: 'bold' }}>
+                            <span style={{ 
+                              backgroundColor: expense.tipo === 'Fijo' ? '#dbeafe' : '#fef3e8',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px'
+                            }}>
+                              {expense.tipo}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-right" style={{ color: '#666' }}>Q{expense.montoMensual.toFixed(2)}</td>
+                          <td className="px-4 py-2 text-right" style={{ color: '#d97706' }}>Q{expense.montoPorHora.toFixed(2)}</td>
+                          <td className="px-4 py-2 text-right font-bold" style={{ color: '#dc2626' }}>Q{expense.montoSimulacion.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                      <tr style={{ backgroundColor: '#fef3e8', fontWeight: 'bold' }}>
+                        <td colSpan="2" className="px-4 py-2" style={{ color: '#6c341e' }}>TOTAL GASTOS</td>
+                        <td className="px-4 py-2 text-right" style={{ color: '#6c341e' }}>-</td>
+                        <td className="px-4 py-2 text-right" style={{ color: '#d97706' }}>Q{(metrics1.expensesData.hourlyFixed + metrics1.expensesData.hourlyVariable).toFixed(2)}</td>
+                        <td className="px-4 py-2 text-right font-bold" style={{ color: '#dc2626' }}>Q{metrics1.expensesData.total.toFixed(2)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Tablas de datos */}

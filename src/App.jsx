@@ -6,6 +6,7 @@ import QueueAnalysis from './components/QueueAnalysis'
 import DataTable from './components/DataTable'
 import './App.css'
 import { supabase } from './supabaseClient';
+import SimulationHistory from './components/SimulationHistory'
 
 export default function App() {
   const [data, setData] = useState(null)
@@ -15,6 +16,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [productos, setProductos] = useState([]);
+  const [expenses, setExpenses] = useState([]);
 
   useEffect(() => {
     const fetchProductos = async () => {
@@ -33,7 +35,24 @@ export default function App() {
       }
     };
 
+    const fetchExpenses = async () => {
+      try {
+        const { data: expensesData, error } = await supabase
+          .from('tbGastos')
+          .select('*');
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        setExpenses(expensesData || []);
+      } catch (err) {
+        console.error('Error fetching expenses:', err);
+      }
+    };
+
     fetchProductos();
+    fetchExpenses();
   }, []);
   
   // Cargar datos desde Supabase
@@ -202,6 +221,20 @@ export default function App() {
             >
               Realizar Simulación
             </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`px-6 py-3 font-semibold transition border-b-2 ${
+                activeTab === 'history'
+                  ? 'border-b-2'
+                  : 'border-b-2'
+              }`}
+              style={{
+                color: activeTab === 'history' ? '#6c341e' : '#999',
+                borderBottomColor: activeTab === 'history' ? '#6c341e' : 'transparent'
+              }}
+            >
+              Historial de Simulaciones
+            </button>
           </div>
 
           {/* Tab Content - Analysis */}
@@ -268,7 +301,14 @@ export default function App() {
                 analysisParams={analysisParams}
                 dataLoaded={!!data}
                 products={productos}
+                expenses={expenses}
               />
+            </div>
+          )}
+          {/* Tab Content - History */}
+          {activeTab === 'history' && (
+            <div>
+              <SimulationHistory/>
             </div>
           )}
         </div>
