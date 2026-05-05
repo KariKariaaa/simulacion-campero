@@ -203,9 +203,37 @@ export default function Simulator({ analysisParams, originalData, products, expe
   }
 
   // Convertir formato MM:SS a HH:MM:SS
-  const convertDurationToTime = (durationStr) => {
+  /*const convertDurationToTime = (durationStr) => {
     return `00:${durationStr}`
+  }*/
+const convertDurationToTime = (durationStr) => {
+  const parts = durationStr.split(":").map(Number);
+
+  let hours = 0;
+  let minutes = 0;
+  let seconds = 0;
+
+  if (parts.length === 2) {
+    // formato mm:ss
+    [minutes, seconds] = parts;
+  } else if (parts.length === 3) {
+    // formato hh:mm:ss
+    [hours, minutes, seconds] = parts;
   }
+
+  // Normalizar segundos a minutos
+  minutes += Math.floor(seconds / 60);
+  seconds = seconds % 60;
+
+  // Normalizar minutos a horas
+  hours += Math.floor(minutes / 60);
+  minutes = minutes % 60;
+
+  // Formato con 2 dígitos
+  const pad = (n) => String(n).padStart(2, "0");
+
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+};
 
   // Guardar datos de simulación en Supabase
   const saveSimulationData = async (simulationType, duration, totalHoursSimulated, simulation1Data, simulation2Data, simulation3Data) => {

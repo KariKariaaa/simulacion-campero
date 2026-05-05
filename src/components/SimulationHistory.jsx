@@ -50,32 +50,64 @@ export default function SimulationHistory() {
     }
   }, [selectedSimId])
 
-  const fetchScenarios = async (idSim) => {
-    try {
-      setLoading(true)
-      const tables = ['tbEscenario1', 'tbEscenario2', 'tbEscenario3']
-      const newScenarios = { 1: [], 2: [], 3: [] }
 
-      for (let i = 0; i < tables.length; i++) {
-        const { data, error: dbError } = await supabase
-          .from(tables[i])
-          .select('*')
-          .eq('idSimulacion', idSim)
+const fetchScenarios = async (idSim) => {
+  try {
+    setLoading(true)
 
-        if (dbError) throw dbError
-        newScenarios[i + 1] = data || []
-      }
+    const tables = ['tbEscenario1', 'tbEscenario2', 'tbEscenario3']
 
-      setScenarios(newScenarios)
-      setSelectedScenario(1)
-      setError('')
-    } catch (err) {
-      setError('Error al cargar escenarios: ' + err.message)
-      console.error(err)
-    } finally {
-      setLoading(false)
+    const newScenarios = {
+      1: [],
+      2: [],
+      3: []
+    }
+
+    for (let i = 0; i < tables.length; i++) {
+      const rows = await fetchAllRows(tables[i], idSim)
+      newScenarios[i + 1] = rows
+    }
+
+    setScenarios(newScenarios)
+    setSelectedScenario(1)
+    setError('')
+  } catch (err) {
+    setError('Error al cargar escenarios: ' + err.message)
+    console.error(err)
+  } finally {
+    setLoading(false)
+  }
+}
+
+const fetchAllRows = async (tableName, idSim) => {
+  const pageSize = 1000
+  let from = 0
+  let to = pageSize - 1
+  let allRows = []
+  let hasMore = true
+
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*')
+      .eq('idSimulacion', idSim)
+      .range(from, to)
+
+    if (error) throw error
+
+    allRows = [...allRows, ...(data || [])]
+
+    if (!data || data.length < pageSize) {
+      hasMore = false
+    } else {
+      from += pageSize
+      to += pageSize
     }
   }
+
+  return allRows
+}
+
 
   const timeToMinutes = (timeStr) => {
     if (!timeStr) return 0
