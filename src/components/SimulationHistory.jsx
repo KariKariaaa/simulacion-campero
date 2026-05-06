@@ -381,21 +381,33 @@ export default function SimulationHistory() {
   `,
   });
 
-  const generateTablePDF = useReactToPrint({
-    contentRef: currentPrintRef,
-    documentTitle: simDetails
-      ? `Escenario ${selectedScenario} - ${simDetails.tipoSimulacion} - ${new Date(simDetails.fecha).toLocaleDateString('es-ES')}`
-      : 'Escenario PDF',
-    pageStyle: `
+const generateTablePDF = useReactToPrint({
+  contentRef: currentPrintRef,
+  documentTitle: simDetails
+    ? `Escenario ${selectedScenario} - ${documentTitle}`
+    : 'Escenario PDF',
+  pageStyle: `
     @page {
-        margin: 5mm;
+        margin: 10mm;
+    }
+    button {
+        display: none !important;
+    }
+    div[style*="max-height"] {
+        max-height: none !important;
+        overflow: visible !important;
+        height: auto !important;
+    }
+    table {
+        table-layout: auto !important;
+        width: 100% !important;
     }
     * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
   `,
-  });
+});
 
   const currentScenarioData = scenarios[selectedScenario].map(formatData)
 
@@ -737,13 +749,13 @@ export default function SimulationHistory() {
             
             {/* Tabla del Escenario Seleccionado */}
             {currentScenarioData.length > 0 ? (
-              <div className="bg-white rounded-3xl p-4 shadow-lg">
+              <div ref={currentPrintRef} className="bg-white rounded-3xl p-4 shadow-lg">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                   <h3
                     className="text-lg font-bold"
                     style={{ color: selectedScenario === 1 ? '#cb691c' : selectedScenario === 2 ? '#6c341e' : '#fbd816' }}
                   >
-                    Escenario {selectedScenario} ({currentScenarioData.length} registros)
+                    Escenario {selectedScenario} ({currentScenarioData.length} registros ) | {documentTitle}
                   </h3>
                   <button
                     onClick={generateTablePDF}
@@ -757,8 +769,8 @@ export default function SimulationHistory() {
                     Descargar tabla PDF
                   </button>
                 </div>
-                <div className="overflow-auto" style={{ maxHeight: '600px' }}>
-                  <table ref={currentPrintRef} className="w-full border-collapse text-xs">
+                <div style={{ maxHeight: '600px', overflow:'auto' }}> {/*className="overflow-auto" style={{ maxHeight: '600px' }}*/}
+                  <table  className="w-full border-collapse text-xs">
                     <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                       <tr
                         style={{
