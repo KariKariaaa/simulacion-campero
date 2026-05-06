@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useReactToPrint } from "react-to-print";
 import { supabase } from '../supabaseClient'
 
 export default function SimulationHistory() {
+  const currentPrintRef = useRef(null);
+  const printRefs = useRef({});
+  const printRef = useRef(null);
   const [simulations, setSimulations] = useState([])
   const [selectedSimId, setSelectedSimId] = useState(null)
   const [selectedScenario, setSelectedScenario] = useState(1)
@@ -359,6 +363,40 @@ export default function SimulationHistory() {
     })
   }
 
+  const documentTitle = simDetails
+  ? `${simDetails.tipoSimulacion} - ${simDetails.duracion} - ${simDetails.horas}h - ${new Date(simDetails.fecha).toLocaleDateString('es-ES')}`
+  : 'Historial de Simulación';
+
+  const generatePDF = useReactToPrint({
+    contentRef: printRef,
+    documentTitle,
+    pageStyle: `
+    @page {
+        margin: 5mm;
+    }
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+  `,
+  });
+
+  const generateTablePDF = useReactToPrint({
+    contentRef: currentPrintRef,
+    documentTitle: simDetails
+      ? `Escenario ${selectedScenario} - ${simDetails.tipoSimulacion} - ${new Date(simDetails.fecha).toLocaleDateString('es-ES')}`
+      : 'Escenario PDF',
+    pageStyle: `
+    @page {
+        margin: 5mm;
+    }
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+  `,
+  });
+
   const currentScenarioData = scenarios[selectedScenario].map(formatData)
 
   return (
@@ -444,10 +482,41 @@ export default function SimulationHistory() {
             {/* Comparación de Métricas */}
             {metrics1 && metrics2 && metrics3 && (
               <div className="bg-white rounded-3xl p-8 shadow-lg">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                 <h2 className="text-2xl font-bold mb-6" style={{ color: '#6c341e' }}>
                   Comparación de los 3 Escenarios
                 </h2>
+                <button
+                  onClick={generatePDF}
+                  className="print:hidden py-2 px-5 rounded-2xl font-bold text-sm transition transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: '#cb691c',
+                    color: '#fbd816',
+                    boxShadow: '0 4px 12px rgba(203, 105, 28, 0.3)'
+                  }}
+                >
+                  Descargar PDF
+                </button>
+                </div>
 
+                <div ref={printRef}>
+                {/* Encabezado: oculto en pantalla, visible solo en PDF */}
+                {simDetails && (
+                  <div 
+                    className="hidden print:block"
+                    style={{ marginBottom: '20px', paddingBottom: '15px', borderBottom: '2px solid #6c341e' }}
+                  >
+                    <p style={{ margin: 0, color: '#666' }}>
+                      Reporte de Simulación {new Date(simDetails.fecha).toLocaleDateString('es-ES', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                    </p>
+                  </div>
+                )}
                 <div className="grid grid-cols-3 gap-6">
                   {[
                     { metrics: metrics1, title: 'Escenario #1', color: '#cb691c' },
@@ -638,6 +707,7 @@ export default function SimulationHistory() {
                     </div>
                   </div>
                 )}
+                </div>
               </div>
             )}
 
@@ -668,14 +738,27 @@ export default function SimulationHistory() {
             {/* Tabla del Escenario Seleccionado */}
             {currentScenarioData.length > 0 ? (
               <div className="bg-white rounded-3xl p-4 shadow-lg">
-                <h3
-                  className="text-lg font-bold mb-3"
-                  style={{ color: selectedScenario === 1 ? '#cb691c' : selectedScenario === 2 ? '#6c341e' : '#fbd816' }}
-                >
-                  Escenario {selectedScenario} ({currentScenarioData.length} registros)
-                </h3>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                  <h3
+                    className="text-lg font-bold"
+                    style={{ color: selectedScenario === 1 ? '#cb691c' : selectedScenario === 2 ? '#6c341e' : '#fbd816' }}
+                  >
+                    Escenario {selectedScenario} ({currentScenarioData.length} registros)
+                  </h3>
+                  <button
+                    onClick={generateTablePDF}
+                    className="print:hidden py-3 px-5 rounded-2xl font-bold text-sm transition transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: '#6c341e',
+                      color: '#fbd816',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.12)'
+                    }}
+                  >
+                    Descargar tabla PDF
+                  </button>
+                </div>
                 <div className="overflow-auto" style={{ maxHeight: '600px' }}>
-                  <table className="w-full border-collapse text-xs">
+                  <table ref={currentPrintRef} className="w-full border-collapse text-xs">
                     <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                       <tr
                         style={{
