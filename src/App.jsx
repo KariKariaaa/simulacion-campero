@@ -7,6 +7,7 @@ import DataTable from './components/DataTable'
 import './App.css'
 import { supabase } from './supabaseClient';
 import SimulationHistory from './components/SimulationHistory'
+import CrudGastoProducts from './components/crudGastoProducts'
 
 export default function App() {
   const [data, setData] = useState(null)
@@ -235,6 +236,20 @@ export default function App() {
             >
               Historial de Simulaciones
             </button>
+            <button
+              onClick={() => setActiveTab('products-expenses')}
+              className={`px-6 py-3 font-semibold transition border-b-2 ${
+                activeTab === 'products-expenses'
+                  ? 'border-b-2'
+                  : 'border-b-2'
+              }`}
+              style={{
+                color: activeTab === 'products-expenses' ? '#6c341e' : '#999',
+                borderBottomColor: activeTab === 'products-expenses' ? '#6c341e' : 'transparent'
+              }}
+            >
+              Productos y Gastos
+            </button>
           </div>
 
           {/* Tab Content - Analysis */}
@@ -311,6 +326,12 @@ export default function App() {
               <SimulationHistory/>
             </div>
           )}
+          {/* Tab Content - Products and Expenses */}
+          {activeTab === 'products-expenses' && (
+            <div>
+              <CrudGastoProducts/>
+            </div>
+          )}  
         </div>
       </main>
 
