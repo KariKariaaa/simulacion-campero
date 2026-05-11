@@ -378,7 +378,7 @@ export default function CrudGastoProducts() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-2xl font-bold mb-6" style={{ color: '#6c341e' }}>
-              {editingProductId ? ' Editar Producto' : '➕ Nuevo Producto'}
+              {editingProductId ? ' Editar Producto' : ' Nuevo Producto'}
             </h3>
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
@@ -485,7 +485,7 @@ export default function CrudGastoProducts() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-2xl font-bold mb-6" style={{ color: '#6c341e' }}>
-              {editingGastoId ? ' Editar Gasto' : '➕ Nuevo Gasto'}
+              {editingGastoId ? ' Editar Gasto' : ' Nuevo Gasto'}
             </h3>
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="col-span-2">
