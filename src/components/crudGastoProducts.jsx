@@ -326,7 +326,7 @@ export default function CrudGastoProducts() {
             backgroundColor: activeTab === 'productos' ? '#fef8e8' : 'transparent'
           }}
         >
-          📦 Productos
+           Productos
         </button>
         <button
           onClick={() => {
@@ -341,7 +341,7 @@ export default function CrudGastoProducts() {
             backgroundColor: activeTab === 'gastos' ? '#fef8e8' : 'transparent'
           }}
         >
-          💰 Gastos
+           Gastos
         </button>
       </div>
 
@@ -378,7 +378,7 @@ export default function CrudGastoProducts() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-2xl font-bold mb-6" style={{ color: '#6c341e' }}>
-              {editingProductId ? '✏️ Editar Producto' : '➕ Nuevo Producto'}
+              {editingProductId ? ' Editar Producto' : '➕ Nuevo Producto'}
             </h3>
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
@@ -485,7 +485,7 @@ export default function CrudGastoProducts() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-2xl font-bold mb-6" style={{ color: '#6c341e' }}>
-              {editingGastoId ? '✏️ Editar Gasto' : '➕ Nuevo Gasto'}
+              {editingGastoId ? ' Editar Gasto' : '➕ Nuevo Gasto'}
             </h3>
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="col-span-2">
@@ -574,7 +574,7 @@ export default function CrudGastoProducts() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-2xl font-bold mb-4" style={{ color: '#6c341e' }}>
-              ⚠️ Confirmar Eliminación
+               Confirmar Eliminación
             </h3>
             <p className="text-lg mb-6" style={{ color: '#333' }}>
               {deleteItemType === 'producto' 
@@ -668,7 +668,7 @@ export default function CrudGastoProducts() {
                             style={{ backgroundColor: '#e3f2fd', color: '#1976d2' }}
                             disabled={loading}
                           >
-                            ✏️ Editar
+                             Editar
                           </button>
                           <button
                             onClick={() => deleteProduct(producto.idProductos)}
@@ -676,7 +676,7 @@ export default function CrudGastoProducts() {
                             style={{ backgroundColor: '#ffebee', color: '#dc2626' }}
                             disabled={loading}
                           >
-                            🗑️ Eliminar
+                             Eliminar
                           </button>
                         </div>
                       </td>
@@ -757,7 +757,7 @@ export default function CrudGastoProducts() {
                             style={{ backgroundColor: '#e3f2fd', color: '#1976d2' }}
                             disabled={loading}
                           >
-                            ✏️ Editar
+                             Editar
                           </button>
                           <button
                             onClick={() => deleteGasto(gasto.id)}
@@ -765,7 +765,7 @@ export default function CrudGastoProducts() {
                             style={{ backgroundColor: '#ffebee', color: '#dc2626' }}
                             disabled={loading}
                           >
-                            🗑️ Eliminar
+                             Eliminar
                           </button>
                         </div>
                       </td>
